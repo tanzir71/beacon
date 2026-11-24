@@ -1,9 +1,9 @@
 # Build State
 
 **Current milestone:** U1 - The app's own skeleton
-**Last updated:** 2026-11-24T23:30Z
+**Last updated:** 2026-11-24
 **Gate status:** green (local full lint/race/cross-build gate)
-**Iterations completed:** 3
+**Iterations completed:** 4
 
 ## Milestone Progress
 
@@ -31,7 +31,7 @@
 - [ ] `beacon.json` and legacy-only site manifests are honoured, and neither is written.
 - [ ] `TestServiceFailureIsContained` proves independent panic containment for each of the four services.
 - [ ] I1-I5 tests pass with unchanged meaning through the new skeleton.
-- [ ] Earlier documents are in docs/history, ADR-015 is rewritten, and both revision sections are recorded.
+- [x] Earlier documents are in docs/history, ADR-015 is rewritten, and both revision sections are recorded.
 
 ## B0 Criteria
 
@@ -56,8 +56,8 @@
 - Cloned with `--no-tags`; source remote removed before adding Beacon origin.
 - Neither the earlier hosting checkout nor Python prototype was modified.
 - The prior build ledger is available in Git at `1c1e433:STATE.md`.
-- The prior handover and ADRs 001-014 are historical references only and are
-  to move into `docs/history/` under revision 1.2.
+- The prior handover and ADRs 001-014 are historical references only, now moved
+  unchanged into `docs/history/` under revision 1.2.
 
 ## Handover Revision 1.1 Applied
 
@@ -82,12 +82,14 @@
   and the gate. No history rewrite or force push.
 - Renamed Repository Bootstrap to Starting point, made U1 current, inserted
   all U1 criteria, renamed B2, and kept factual toolchain/test proof.
-- Next documentation pass rewrites README/CONTRIBUTING/SECURITY/API, moves prior
-  documents to history, replaces withdrawn ADR-015 with 015-one-app, puts the
-  storage decision in ADR-018, and adds delivery-path ADR-017.
-- The old landing page/screenshots and hosting-centred setup/launchpad are to
-  be removed, not presented as this app. A behavior-preserving package move is
-  separate from supervisor, configuration, identity, shell and CLI changes.
+- Rewrote README/CONTRIBUTING/SECURITY, moved prior documents to history,
+  replaced withdrawn ADR-015 with 015-one-app, put storage in ADR-018, and
+  added delivery-path ADR-017. API documents explicitly note the U1 transition;
+  the full API rewrite follows the app-owned shell/API implementation.
+- Deleted the old landing page/screenshots. Hosting-centred setup/launchpad
+  removal follows runtime restructuring; they are no longer presented as the
+  product in active documentation. The move-only commit is separate from
+  supervisor, configuration, identity, shell and CLI behavior changes.
 - The old-name child environment decision is withdrawn. U1 emits only Beacon
   names and reads the legacy site manifest only without changing user files.
 - Owner instruction at 2026-11-24T23:23Z: run no GitHub Actions. Use local
@@ -152,13 +154,38 @@
   v2.30.0 (Go floor 1.26) instead. `gosec -quiet ./...` exited 0. This is a
   local tooling workaround, not a source or rule exclusion. Tool-only modules
   were not added to the app's go.mod.
+- Committed locally as `a832ce4`; not pushed.
+
+### 4: Revision 1.2 Product Documents And History
+
+- New history/product documentation assertions failed first on both root
+  documents, all fourteen active prior ADRs, missing new ADRs and old framing.
+- Moved the prior handover, blocker and ADRs unchanged under docs/history;
+  added the required one-line historical notice. Replaced the withdrawn first
+  ADR-015 draft with 015-one-app, added ADR-017 and moved storage to ADR-018.
+- Rewrote README, CONTRIBUTING and SECURITY around this product, twelve
+  invariants and delivery/safety requirements. Unimplemented guarantees and
+  commands are explicitly labelled; no former dashboard screenshots are shown.
+- Deleted docs/index.html and docs/screenshots as required. Retargeted existing
+  outside-resource, installer-elevation, plain-copy and Sigstore assertions to
+  active product docs; replaced the obsolete screenshot requirement with an
+  assertion that neither superseded landing page nor screenshots are published.
+  B0 must replace that interim absence assertion with real generated-page tests.
+- The shipped-file scanner now exempts docs/history, instead of exempting the
+  old root handover by name. Runtime scanning and all other checks remain.
+- Updated repository description/topics to one app for messages, people and
+  sites. Metadata editing runs no workflow and pushed no source commit.
+- `go test ./scripts -count=1` and full local `make check` exited 0 with full
+  lint, race tests, injection, three zero-CGO targets, tray and shipped scan.
+- UI, setup, manifest compatibility and CLI runtime changes remain unchecked;
+  no U1 completion claim is made by this documentation pass.
 
 ## Decisions Made This Build
 
 - Revision 1.2 is authoritative. Earlier product architecture decisions and
   milestones do not prescribe this app. Keep factual reuse and attribution.
-- The first ADR-015 draft is withdrawn and is to be replaced, not treated as
-  authority. Only legacy manifest reading remains a compatibility requirement.
+- The first ADR-015 draft is withdrawn and replaced. Only legacy manifest
+  reading remains a compatibility requirement.
 - No GitHub Actions. Use local native/cross-target lint, race tests, security
   tools, browsers, installer tooling or local VMs where available.
 
@@ -175,7 +202,6 @@
 
 ## Next Target
 
-Align documents, then make the behavior-preserving package-move commit before
-implementing the app supervisor. No further B0 features until U1 passes. Read
-this ledger and run `make check` at the start of each iteration. Do not push
-or run GitHub Actions.
+Make the behavior-preserving package-move commit before implementing the app
+supervisor. No further B0 features until U1 passes. Read this ledger and run
+`make check` at the start of each iteration. Do not push or run GitHub Actions.

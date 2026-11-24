@@ -7,9 +7,9 @@ import (
 	"testing"
 )
 
-func TestLandingPageHasNoExternalResourceReferences(t *testing.T) {
+func TestProductDocsHaveNoExternalResourceReferences(t *testing.T) {
 	t.Parallel()
-	content, err := os.ReadFile("../docs/index.html") // #nosec G304 -- fixed checked-in landing page.
+	content, err := os.ReadFile("../README.md") // #nosec G304 -- fixed checked-in product documentation.
 	if err != nil {
 		t.Fatalf("read landing page: %v", err)
 	}
@@ -30,9 +30,9 @@ func TestLandingPageHasNoExternalResourceReferences(t *testing.T) {
 	}
 }
 
-func TestLandingPageExplainsWindowsInstallerElevationHonestly(t *testing.T) {
+func TestProductDocsExplainWindowsInstallerElevationHonestly(t *testing.T) {
 	t.Parallel()
-	content, err := os.ReadFile("../docs/index.html") // #nosec G304 -- fixed checked-in landing page.
+	content, err := os.ReadFile("../README.md") // #nosec G304 -- fixed checked-in product documentation.
 	if err != nil {
 		t.Fatalf("read landing page: %v", err)
 	}
@@ -47,9 +47,9 @@ func TestLandingPageExplainsWindowsInstallerElevationHonestly(t *testing.T) {
 	}
 }
 
-func TestLandingPageUsesCurrentSigstoreBundleVerification(t *testing.T) {
+func TestProductDocsUseCurrentSigstoreBundleVerification(t *testing.T) {
 	t.Parallel()
-	content, err := os.ReadFile("../docs/index.html") // #nosec G304 -- fixed checked-in landing page.
+	content, err := os.ReadFile("../README.md") // #nosec G304 -- fixed checked-in product documentation.
 	if err != nil {
 		t.Fatalf("read landing page: %v", err)
 	}

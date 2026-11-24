@@ -276,12 +276,12 @@ func scanShippedFiles() error {
 		}
 		clean := filepath.ToSlash(path)
 		if entry.IsDir() {
-			if entry.Name() == "node_modules" || clean == ".git" || clean == "docs/adr" || clean == "bin" || clean == "dist" {
+			if entry.Name() == "node_modules" || clean == ".git" || clean == "docs/adr" || clean == "docs/history" || clean == "bin" || clean == "dist" {
 				return fs.SkipDir
 			}
 			return nil
 		}
-		if entry.Name() == "DROPSERVE-HANDOVER.md" || entry.Name() == "STATE.md" {
+		if entry.Name() == "STATE.md" {
 			return nil
 		}
 		// #nosec G304,G122 -- the scan intentionally follows the checked-out shipped tree; matches are advisory build failures only.

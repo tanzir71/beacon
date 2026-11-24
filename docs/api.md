@@ -1,5 +1,10 @@
 # Beacon local API
 
+**U1 transition:** this lists the current reused site's endpoints, not a settled
+API for the unified app. U1 will replace the launchpad with the app-owned shell
+and document its local API once that contract is implemented and tested. People,
+messages, network delivery and guest identities are not implied by these routes.
+
 The dashboard uses this API, and local tools may use it as an integration surface. It is available beneath `/_beacon/` on every active Beacon HTTP or HTTPS listener.
 
 ## Read-only endpoints

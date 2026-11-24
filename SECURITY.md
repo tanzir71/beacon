@@ -1,37 +1,66 @@
-# Security policy
+# Security Policy
 
-## Reporting a vulnerability
+Report vulnerabilities privately to tanzir71@gmail.com or the repository's
+private security advisory form. Include version, OS, reproduction steps and
+impact. Do not publish an unpatched vulnerability in a public issue.
 
-Please report security issues privately by emailing [tanzir71@gmail.com](mailto:tanzir71@gmail.com) or by using this repository's private GitHub Security Advisory form. Do not open a public issue for an unpatched vulnerability.
+## Scope And Current Status
 
-You should receive an acknowledgement within seven days. The project uses a 90-day coordinated-disclosure window unless a shorter timeline is needed because exploitation is already public. Reports should include the affected version, operating system, reproduction steps, impact, and any suggested mitigation.
+Blackout Beacon is one app for people, messages and sites. U1 is in progress.
+Message encryption, mailbox delivery, panic wipe, phone identities and the
+internet-path safety model described below are not implemented yet. These are
+requirements, not current security guarantees. The app is not a public hosting
+platform, account service, anonymity network or state-adversary concealment tool.
 
-## Threat model
+## Message And Device Safety Requirements
 
-Beacon is a personal server for a home or office LAN. It serves files and proxies processes on behalf of the person who controls the computer. It is not a hardened public hosting platform, multi-user service, or sandbox.
+Private messages use library-provided NIP-17, NIP-44 and NIP-59 constructions,
+with no forward secrecy in this ladder. Relays and mailboxes keep ciphertext
+only; local event storage is encrypted at rest. A six-digit PIN controls optional
+non-loopback access. A phone's identity key and messages are held on its nearby
+computer; the operator of that computer can read them. Join must disclose this.
 
-Beacon defends:
+Key files require owner-only access. Backup and restore must reproduce the
+identity. A panic wipe requires typed confirmation and removes keys/database,
+while disclosing that secure erasure of SSD pages, backups and other people's
+copies cannot be guaranteed. Cautious mode uses Beacon-network mailboxes only,
+never direct contact dials or internet relays.
 
-- resolved static paths against lexical, encoded, symlink, UNC, and platform-specific traversal;
-- dashboard mutations with same-origin validation and a per-process CSRF token;
-- optional non-loopback access with a six-digit PIN and HMAC-signed, 30-day, HttpOnly, SameSite session cookie;
-- request handling with body, header, connection, timeout, and SSE-client limits;
-- accidental public exposure by requiring an explicit per-app Funnel action and exact-slug confirmation;
-- operating-system trust changes by keeping local HTTPS and CA installation separate, explicit, and reversible;
-- downloaded runtime packs with pinned URLs, SHA-256 verification, archive traversal checks, and executable verification;
-- release artifacts with checksums, SPDX SBOMs, provenance attestations, Authenticode identity on Windows, and Sigstore bundles.
+## Network And Metadata Requirements
 
-The following are deliberate limitations:
+An internet relay can see the recipient key, sender address and encrypted text.
+A provider can see that Beacon runs and the addresses it contacts, not private
+message content or which sites are opened through encrypted links. Beacon does
+not disguise traffic. Ordinary TLS 1.3 and QUIC are used.
 
-- Anyone on the same LAN can open an app whose `visibility` is `lan` unless the optional PIN lock is enabled.
-- App code runs with the signed-in user's privileges. Beacon does not sandbox apps or isolate them from each other or the user's files. Adding an untrusted command app is equivalent to running untrusted code.
-- Tailscale Funnel makes the selected app reachable from the public internet. Unless the optional global PIN lock is enabled, Beacon adds no per-app authentication.
-- A self-signed Authenticode certificate provides identity and tamper evidence but does not guarantee Microsoft SmartScreen reputation.
+Every beyond-LAN connection needs signed introduction or explicit user action.
+There is no address scanning outside the user's subnet, no public DHT and no
+relay crawling. Signed editable lists are the only internet endpoint source;
+internet paths remain optional and use the same policy budget. At most four
+internet relay connections may be held open. Delivery labels require evidence;
+mailbox acceptance is not device receipt. Deduplicate multipath events by ID.
 
-## Supported versions
+## Hosting And Exposure Boundaries
 
-Until the first stable release, security fixes are made on the `main` branch. After v1.0, the latest stable release and `main` will receive security fixes.
+Site folders are read-only to Beacon. Static-file path checks, same-origin/CSRF
+validation, PIN sessions and bounded requests remain tested. Hosted app code
+runs with the signed-in user's privileges: adding untrusted code is equivalent
+to running it, not putting it in a security sandbox.
 
-## Safe removal
+Exposure past LAN, lighthouse roles, public listings, router mappings and OS
+trust installation require explicit, specific consent in the current session.
+Creating a local CA must not install it into the OS trust store. Peer-site
+gateways must use distinct browser origins, strip credentials, set sandbox
+headers, reject service workers and cap responses before they ship.
 
-The supported uninstaller removes Beacon's process, start-at-login registration, firewall rules, trusted local CA, and files under Beacon's own install/state directories. It never removes the user's Apps folders.
+Only Beacon-owned install/config/state paths and OS registrations may be
+removed. An optional import reads earlier settings and folder references but
+does not change the source installation or site content.
+
+## Distribution
+
+Release checksums, SBOMs, provenance, Sigstore bundles and Authenticode provide
+integrity evidence, not trust in arbitrary hosted code or SmartScreen reputation.
+No Beacon release is complete yet. Fixes are maintained on main during pre-1.0
+development. Do not claim a signed or externally verified release without the
+corresponding artifact and successful verification command.

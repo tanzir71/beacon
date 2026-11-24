@@ -13,7 +13,7 @@ func TestPrimaryCopyFollowsTheVoiceRules(t *testing.T) {
 			"local certificate authority",
 			"trust store",
 		},
-		"../docs/index.html": {
+		"../README.md": {
 			"document root",
 			"Edit vhost",
 			"several hundred MB",
