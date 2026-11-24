@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/tanzir71/dropserve/internal/scanner"
+	"github.com/tanzir71/beacon/internal/scanner"
 )
 
 func FuzzSlugSanitiser(f *testing.F) {

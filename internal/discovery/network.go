@@ -1,4 +1,4 @@
-// Package discovery identifies verified addresses through which Dropserve can
+// Package discovery identifies verified addresses through which Beacon can
 // be reached and manages optional local/remote sharing integrations.
 package discovery
 

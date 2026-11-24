@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/tanzir71/dropserve/internal/dashboard"
-	"github.com/tanzir71/dropserve/internal/scanner"
+	"github.com/tanzir71/beacon/internal/dashboard"
+	"github.com/tanzir71/beacon/internal/scanner"
 )
 
 func TestServerLifecycleNeverInstallsTrustWithoutExplicitAction(t *testing.T) {

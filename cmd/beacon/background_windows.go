@@ -16,10 +16,10 @@ func backgroundConsoleWindow() uintptr {
 }
 
 func backgroundExecutable(current string) string {
-	if !strings.EqualFold(filepath.Base(current), "dropserve-cli.exe") {
+	if !strings.EqualFold(filepath.Base(current), "beacon-cli.exe") {
 		return current
 	}
-	gui := filepath.Join(filepath.Dir(current), "dropserve.exe")
+	gui := filepath.Join(filepath.Dir(current), "beacon.exe")
 	info, err := os.Stat(gui)
 	if err == nil && !info.IsDir() {
 		return gui

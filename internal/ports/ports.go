@@ -60,13 +60,13 @@ func Acquire(ctx context.Context, bind string, preferred int) (net.Listener, Sel
 		case preferred == 0 && port != 80:
 			selection.Fallback = true
 			selection.Message = fmt.Sprintf(
-				"Port 80 is being used by another program, so Dropserve is using port %d instead.",
+				"Port 80 is being used by another program, so Beacon is using port %d instead.",
 				port,
 			)
 		case preferred > 0 && port != preferred:
 			selection.Fallback = true
 			selection.Message = fmt.Sprintf(
-				"Port %d is unavailable, so Dropserve is using port %d instead.",
+				"Port %d is unavailable, so Beacon is using port %d instead.",
 				preferred,
 				port,
 			)

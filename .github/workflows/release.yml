@@ -92,9 +92,9 @@ jobs:
           if ([string]::IsNullOrWhiteSpace($env:SIGNING_PFX_BASE64) -or [string]::IsNullOrWhiteSpace($env:SIGNING_PASSWORD)) {
             throw 'Windows signing secrets are not configured'
           }
-          $pfx = Join-Path $env:RUNNER_TEMP 'dropserve-signing.pfx'
+          $pfx = Join-Path $env:RUNNER_TEMP 'beacon-signing.pfx'
           [System.IO.File]::WriteAllBytes($pfx, [Convert]::FromBase64String($env:SIGNING_PFX_BASE64))
-          ./scripts/release/sign-windows.ps1 -Pfx $pfx -Password $env:SIGNING_PASSWORD -Files ./bin/dropserve.exe,./bin/dropserve-cli.exe
+          ./scripts/release/sign-windows.ps1 -Pfx $pfx -Password $env:SIGNING_PASSWORD -Files ./bin/beacon.exe,./bin/beacon-cli.exe
       - name: Install Inno Setup
         shell: pwsh
         run: choco install innosetup --no-progress -y
@@ -108,12 +108,12 @@ jobs:
           $sourceDir = (Resolve-Path bin).Path
           $outputDir = Join-Path (Resolve-Path .).Path 'dist\installer'
           New-Item -ItemType Directory -Force -Path $outputDir | Out-Null
-          & $iscc.FullName "/DSourceDir=$sourceDir" "/DOutputDir=$outputDir" "/DAppVersion=$version" "/DNumericVersion=$numericVersion" /Q packaging/windows/dropserve.iss
+          & $iscc.FullName "/DSourceDir=$sourceDir" "/DOutputDir=$outputDir" "/DAppVersion=$version" "/DNumericVersion=$numericVersion" /Q packaging/windows/beacon.iss
           if ($LASTEXITCODE -ne 0) { throw "ISCC exited $LASTEXITCODE" }
       - name: Sign and verify installer
         shell: pwsh
         run: |
-          $pfx = Join-Path $env:RUNNER_TEMP 'dropserve-signing.pfx'
+          $pfx = Join-Path $env:RUNNER_TEMP 'beacon-signing.pfx'
           $installers = @(Get-ChildItem -LiteralPath ./dist/installer -Filter '*-setup.exe')
           if ($installers.Count -ne 1) { throw "expected one installer, found $($installers.Count)" }
           $installer = $installers[0]
@@ -168,5 +168,5 @@ jobs:
         if: always()
         shell: pwsh
         run: |
-          $pfx = Join-Path $env:RUNNER_TEMP 'dropserve-signing.pfx'
+          $pfx = Join-Path $env:RUNNER_TEMP 'beacon-signing.pfx'
           if (Test-Path -LiteralPath $pfx) { Remove-Item -LiteralPath $pfx -Force }

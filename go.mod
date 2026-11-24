@@ -1,4 +1,4 @@
-module github.com/tanzir71/dropserve
+module github.com/tanzir71/beacon
 
 go 1.25.0
 

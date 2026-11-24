@@ -1,4 +1,4 @@
-// Package doctor builds Dropserve's complete, read-only support report.
+// Package doctor builds Beacon's complete, read-only support report.
 package doctor
 
 import (
@@ -15,11 +15,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/tanzir71/dropserve/internal/app"
-	"github.com/tanzir71/dropserve/internal/autostart"
-	"github.com/tanzir71/dropserve/internal/config"
-	"github.com/tanzir71/dropserve/internal/scanner"
-	"github.com/tanzir71/dropserve/internal/state"
+	"github.com/tanzir71/beacon/internal/app"
+	"github.com/tanzir71/beacon/internal/autostart"
+	"github.com/tanzir71/beacon/internal/config"
+	"github.com/tanzir71/beacon/internal/scanner"
+	"github.com/tanzir71/beacon/internal/state"
 )
 
 const diagnosticTimeout = 10 * time.Second
@@ -62,7 +62,7 @@ type Report struct {
 	checks []check
 }
 
-// Diagnose inspects the local Dropserve setup without changing it.
+// Diagnose inspects the local Beacon setup without changing it.
 func Diagnose(options Options, probes Probes) Report {
 	probes = completeProbes(probes)
 	report := Report{}
@@ -209,7 +209,7 @@ func addWindowsChecks(report *Report, probes Probes) {
 	} else {
 		report.add(severityOK, "Windows excluded TCP port ranges", summarize(output), false)
 	}
-	output, err = probes.RunCommand("netsh.exe", "advfirewall", "firewall", "show", "rule", "name=Dropserve")
+	output, err = probes.RunCommand("netsh.exe", "advfirewall", "firewall", "show", "rule", "name=Beacon")
 	if err != nil {
 		report.add(severityWarning, "Windows firewall rule", "not found or unreadable: "+err.Error(), false)
 	} else {
@@ -238,7 +238,7 @@ func addRootChecks(report *Report, configuration config.Config) {
 }
 
 func readableDirectory(path string) error {
-	// #nosec G304 -- paths come from the user's local Dropserve configuration.
+	// #nosec G304 -- paths come from the user's local Beacon configuration.
 	directory, err := os.Open(path)
 	if err != nil {
 		return err
@@ -394,7 +394,7 @@ func lastErrorLines(directory string) ([]string, error) {
 	lines := make([]string, 0, 20)
 	for _, log := range files {
 		path := filepath.Join(directory, log.name)
-		// #nosec G304 -- directory is Dropserve's machine-owned log directory and names come from ReadDir.
+		// #nosec G304 -- directory is Beacon's machine-owned log directory and names come from ReadDir.
 		file, err := os.Open(path)
 		if err != nil {
 			return nil, fmt.Errorf("open log %s: %w", log.name, err)

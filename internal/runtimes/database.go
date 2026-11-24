@@ -8,7 +8,7 @@ import (
 )
 
 // DatabaseDataDirectory creates one engine's mutable data boundary below the
-// Dropserve state directory. App paths are not accepted by this API.
+// Beacon state directory. App paths are not accepted by this API.
 func DatabaseDataDirectory(stateDirectory, engine string) (string, error) {
 	if strings.TrimSpace(stateDirectory) == "" {
 		return "", fmt.Errorf("database state directory is required")
@@ -28,7 +28,7 @@ func DatabaseDataDirectory(stateDirectory, engine string) (string, error) {
 	directory := filepath.Join(root, "databases", engine, "data")
 	relative, err := filepath.Rel(root, directory)
 	if err != nil || relative == "." || relative == ".." || strings.HasPrefix(relative, ".."+string(filepath.Separator)) {
-		return "", fmt.Errorf("database data directory escapes Dropserve state")
+		return "", fmt.Errorf("database data directory escapes Beacon state")
 	}
 	if err := os.MkdirAll(directory, 0o700); err != nil {
 		return "", fmt.Errorf("create %s data directory: %w", engine, err)

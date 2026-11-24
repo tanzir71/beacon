@@ -6,12 +6,12 @@ import (
 )
 
 func TestLaunchAgentRunsInBackgroundAndRestartsOnFailure(t *testing.T) {
-	plist := string(makeLaunchAgent(`/Applications/Dropserve & Tools/dropserve`))
+	plist := string(makeLaunchAgent(`/Applications/Beacon & Tools/beacon`))
 	for _, required := range []string{
 		`<key>Label</key>`,
-		`<string>dev.dropserve.agent</string>`,
+		`<string>dev.beacon.agent</string>`,
 		`<key>ProgramArguments</key>`,
-		`<string>/Applications/Dropserve &amp; Tools/dropserve</string>`,
+		`<string>/Applications/Beacon &amp; Tools/beacon</string>`,
 		`<string>--background</string>`,
 		`<key>RunAtLoad</key>`,
 		`<true/>`,

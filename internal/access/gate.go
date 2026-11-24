@@ -1,4 +1,4 @@
-// Package access implements Dropserve's optional non-loopback PIN gate.
+// Package access implements Beacon's optional non-loopback PIN gate.
 package access
 
 import (
@@ -18,7 +18,7 @@ import (
 	"time"
 )
 
-const sessionCookie = "dropserve_session"
+const sessionCookie = "beacon_session"
 
 const sessionLifetime = 30 * 24 * time.Hour
 
@@ -54,7 +54,7 @@ func (gate *Gate) Update(enabled bool, pinHash string) error {
 			return fmt.Errorf("PIN hash must be a 64-character SHA-256 hex digest")
 		}
 		copy(current.pinHash[:], decoded)
-		current.key = sha256.Sum256(append([]byte("dropserve-session-v1:"), decoded...))
+		current.key = sha256.Sum256(append([]byte("beacon-session-v1:"), decoded...))
 	}
 	gate.live.Store(current)
 	return nil
@@ -63,8 +63,8 @@ func (gate *Gate) Update(enabled bool, pinHash string) error {
 // ServeHTTP enforces the live policy.
 func (gate *Gate) ServeHTTP(response http.ResponseWriter, request *http.Request) {
 	current := gate.live.Load()
-	if current == nil || !current.enabled || request.URL.Path == "/_dropserve/healthz" || request.URL.Path == "/_dropserve/login" || isLoopback(request.RemoteAddr) {
-		if current != nil && current.enabled && request.URL.Path == "/_dropserve/login" && !isLoopback(request.RemoteAddr) {
+	if current == nil || !current.enabled || request.URL.Path == "/_beacon/healthz" || request.URL.Path == "/_beacon/login" || isLoopback(request.RemoteAddr) {
+		if current != nil && current.enabled && request.URL.Path == "/_beacon/login" && !isLoopback(request.RemoteAddr) {
 			gate.serveLogin(response, request, current)
 			return
 		}
@@ -174,7 +174,7 @@ func (gate *Gate) writeLogin(response http.ResponseWriter, request *http.Request
 	if message != "" {
 		messageHTML = `<p role="alert" class="error">` + html.EscapeString(message) + `</p>`
 	}
-	content := `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Unlock Dropserve</title><style>html{color-scheme:light dark;font-family:system-ui,sans-serif}body{min-height:100vh;margin:0;display:grid;place-items:center;background:#f3f6f4;color:#18201e}main{width:min(360px,calc(100% - 32px));padding:28px;border:1px solid #dce3df;border-radius:20px;background:white;box-shadow:0 18px 50px #16302718}h1{margin-top:0}p{color:#66716d;line-height:1.5}.error{color:#9b2c2c}label{display:block;font-weight:700}input{box-sizing:border-box;width:100%;margin:8px 0 18px;padding:12px;border:1px solid #9baba4;border-radius:10px;font:22px ui-monospace,monospace;letter-spacing:.3em}button{width:100%;padding:11px;border:0;border-radius:999px;color:white;background:#156b50;font-weight:750}@media(prefers-color-scheme:dark){body{background:#111815;color:#edf3f0}main{border-color:#33413c;background:#1b2622}p{color:#aab7b1}}</style><main><h1>Unlock Dropserve</h1><p>This computer asks for its six-digit PIN before sharing apps over the network.</p>` + messageHTML + `<form method="post" action="/_dropserve/login"><input type="hidden" name="return_to" value="` + html.EscapeString(returnTo) + `"><label for="pin">PIN</label><input id="pin" name="pin" type="password" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" autofocus required><button type="submit">Unlock for 30 days</button></form></main></html>`
+	content := `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Unlock Beacon</title><style>html{color-scheme:light dark;font-family:system-ui,sans-serif}body{min-height:100vh;margin:0;display:grid;place-items:center;background:#f3f6f4;color:#18201e}main{width:min(360px,calc(100% - 32px));padding:28px;border:1px solid #dce3df;border-radius:20px;background:white;box-shadow:0 18px 50px #16302718}h1{margin-top:0}p{color:#66716d;line-height:1.5}.error{color:#9b2c2c}label{display:block;font-weight:700}input{box-sizing:border-box;width:100%;margin:8px 0 18px;padding:12px;border:1px solid #9baba4;border-radius:10px;font:22px ui-monospace,monospace;letter-spacing:.3em}button{width:100%;padding:11px;border:0;border-radius:999px;color:white;background:#156b50;font-weight:750}@media(prefers-color-scheme:dark){body{background:#111815;color:#edf3f0}main{border-color:#33413c;background:#1b2622}p{color:#aab7b1}}</style><main><h1>Unlock Beacon</h1><p>This computer asks for its six-digit PIN before sharing apps over the network.</p>` + messageHTML + `<form method="post" action="/_beacon/login"><input type="hidden" name="return_to" value="` + html.EscapeString(returnTo) + `"><label for="pin">PIN</label><input id="pin" name="pin" type="password" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" autofocus required><button type="submit">Unlock for 30 days</button></form></main></html>`
 	response.Header().Set("Content-Type", "text/html; charset=utf-8")
 	response.Header().Set("Cache-Control", "no-store")
 	response.Header().Set("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'")

@@ -1,6 +1,6 @@
 //go:build linux
 
-// Package autostart manages Dropserve's per-user systemd service.
+// Package autostart manages Beacon's per-user systemd service.
 package autostart
 
 import (
@@ -14,9 +14,9 @@ import (
 	"time"
 )
 
-const systemdUnitName = "dropserve.service"
+const systemdUnitName = "beacon.service"
 
-// Enable writes, enables, and starts the current user's Dropserve service.
+// Enable writes, enables, and starts the current user's Beacon service.
 func Enable(executable string) error {
 	path, err := systemdUnitPath()
 	if err != nil {
@@ -34,7 +34,7 @@ func Enable(executable string) error {
 	return verifyEnabled("systemd user service", Enabled)
 }
 
-// Disable stops, disables, and removes the current user's Dropserve service.
+// Disable stops, disables, and removes the current user's Beacon service.
 func Disable() error {
 	path, err := systemdUnitPath()
 	if err != nil {
@@ -54,7 +54,7 @@ func Disable() error {
 	return nil
 }
 
-// Enabled asks systemd whether Dropserve's current-user service is enabled.
+// Enabled asks systemd whether Beacon's current-user service is enabled.
 func Enabled() (bool, error) {
 	output, err := runSystemctl("--user", "is-enabled", "--quiet", systemdUnitName)
 	if err == nil {
@@ -80,7 +80,7 @@ func writeSystemdUnit(path string, data []byte) error {
 	if err := os.MkdirAll(directory, 0o750); err != nil {
 		return fmt.Errorf("create systemd user directory: %w", err)
 	}
-	temporary, err := os.CreateTemp(directory, ".dropserve.service-*")
+	temporary, err := os.CreateTemp(directory, ".beacon.service-*")
 	if err != nil {
 		return fmt.Errorf("create temporary systemd user unit: %w", err)
 	}

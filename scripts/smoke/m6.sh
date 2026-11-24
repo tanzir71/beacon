@@ -2,7 +2,7 @@
 set -eu
 
 repository_root=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
-binary=${1:-"$repository_root/bin/dropserve"}
+binary=${1:-"$repository_root/bin/beacon"}
 case "$binary" in
   /*) ;;
   *) binary=$(CDPATH= cd -- "$(dirname -- "$binary")" && pwd)/$(basename -- "$binary") ;;
@@ -20,7 +20,7 @@ mkdir -p "$config_directory" "$fake_bin"
 ln -s /bin/true "$fake_bin/systemctl"
 
 XDG_CONFIG_HOME="$config_directory" PATH="$fake_bin:$PATH" "$binary" autostart enable
-unit_path="$config_directory/systemd/user/dropserve.service"
+unit_path="$config_directory/systemd/user/beacon.service"
 test -f "$unit_path"
 systemd-analyze verify "$unit_path"
 grep -F 'ExecStart=' "$unit_path" | grep -F -- '--background' >/dev/null

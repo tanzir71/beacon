@@ -26,7 +26,7 @@ func TestPINGateExemptsLoopbackAndHealthAndIssuesSignedSession(t *testing.T) {
 	now := time.Date(2026, time.August, 28, 12, 0, 0, 0, time.UTC)
 	gate.now = func() time.Time { return now }
 
-	loopback := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://dropserve.test/notes/", nil)
+	loopback := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://beacon.test/notes/", nil)
 	loopback.RemoteAddr = "127.0.0.1:5000"
 	loopbackResponse := httptest.NewRecorder()
 	gate.ServeHTTP(loopbackResponse, loopback)
@@ -34,7 +34,7 @@ func TestPINGateExemptsLoopbackAndHealthAndIssuesSignedSession(t *testing.T) {
 		t.Fatalf("loopback response=%d called=%d", loopbackResponse.Code, called)
 	}
 
-	health := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://dropserve.test/_dropserve/healthz", nil)
+	health := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://beacon.test/_beacon/healthz", nil)
 	health.RemoteAddr = "192.168.1.20:5000"
 	healthResponse := httptest.NewRecorder()
 	gate.ServeHTTP(healthResponse, health)
@@ -42,7 +42,7 @@ func TestPINGateExemptsLoopbackAndHealthAndIssuesSignedSession(t *testing.T) {
 		t.Fatalf("health response=%d called=%d", healthResponse.Code, called)
 	}
 
-	blocked := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://dropserve.test/notes/", nil)
+	blocked := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://beacon.test/notes/", nil)
 	blocked.RemoteAddr = "192.168.1.20:5000"
 	blockedResponse := httptest.NewRecorder()
 	gate.ServeHTTP(blockedResponse, blocked)
@@ -51,7 +51,7 @@ func TestPINGateExemptsLoopbackAndHealthAndIssuesSignedSession(t *testing.T) {
 	}
 
 	form := url.Values{"pin": {"123456"}, "return_to": {"/notes/"}}
-	login := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "http://dropserve.test/_dropserve/login", strings.NewReader(form.Encode()))
+	login := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "http://beacon.test/_beacon/login", strings.NewReader(form.Encode()))
 	login.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	login.RemoteAddr = "192.168.1.20:5000"
 	loginResponse := httptest.NewRecorder()
@@ -64,7 +64,7 @@ func TestPINGateExemptsLoopbackAndHealthAndIssuesSignedSession(t *testing.T) {
 		t.Fatalf("login cookies = %#v", result.Cookies())
 	}
 
-	authorized := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://dropserve.test/notes/", nil)
+	authorized := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://beacon.test/notes/", nil)
 	authorized.RemoteAddr = "192.168.1.20:5000"
 	authorized.AddCookie(result.Cookies()[0])
 	authorizedResponse := httptest.NewRecorder()
@@ -88,7 +88,7 @@ func TestPINGateRejectsWrongPINAndUnsafeReturnURL(t *testing.T) {
 		t.Fatal(err)
 	}
 	form := url.Values{"pin": {"000000"}, "return_to": {"//attacker.example/"}}
-	request := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "http://dropserve.test/_dropserve/login", strings.NewReader(form.Encode()))
+	request := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "http://beacon.test/_beacon/login", strings.NewReader(form.Encode()))
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	request.RemoteAddr = "192.168.1.20:5000"
 	response := httptest.NewRecorder()

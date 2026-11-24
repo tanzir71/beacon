@@ -8,9 +8,9 @@ You should receive an acknowledgement within seven days. The project uses a 90-d
 
 ## Threat model
 
-Dropserve is a personal server for a home or office LAN. It serves files and proxies processes on behalf of the person who controls the computer. It is not a hardened public hosting platform, multi-user service, or sandbox.
+Beacon is a personal server for a home or office LAN. It serves files and proxies processes on behalf of the person who controls the computer. It is not a hardened public hosting platform, multi-user service, or sandbox.
 
-Dropserve defends:
+Beacon defends:
 
 - resolved static paths against lexical, encoded, symlink, UNC, and platform-specific traversal;
 - dashboard mutations with same-origin validation and a per-process CSRF token;
@@ -24,8 +24,8 @@ Dropserve defends:
 The following are deliberate limitations:
 
 - Anyone on the same LAN can open an app whose `visibility` is `lan` unless the optional PIN lock is enabled.
-- App code runs with the signed-in user's privileges. Dropserve does not sandbox apps or isolate them from each other or the user's files. Adding an untrusted command app is equivalent to running untrusted code.
-- Tailscale Funnel makes the selected app reachable from the public internet. Unless the optional global PIN lock is enabled, Dropserve adds no per-app authentication.
+- App code runs with the signed-in user's privileges. Beacon does not sandbox apps or isolate them from each other or the user's files. Adding an untrusted command app is equivalent to running untrusted code.
+- Tailscale Funnel makes the selected app reachable from the public internet. Unless the optional global PIN lock is enabled, Beacon adds no per-app authentication.
 - A self-signed Authenticode certificate provides identity and tamper evidence but does not guarantee Microsoft SmartScreen reputation.
 
 ## Supported versions
@@ -34,4 +34,4 @@ Until the first stable release, security fixes are made on the `main` branch. Af
 
 ## Safe removal
 
-The supported uninstaller removes Dropserve's process, start-at-login registration, firewall rules, trusted local CA, and files under Dropserve's own install/state directories. It never removes the user's Apps folders.
+The supported uninstaller removes Beacon's process, start-at-login registration, firewall rules, trusted local CA, and files under Beacon's own install/state directories. It never removes the user's Apps folders.

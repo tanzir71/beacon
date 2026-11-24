@@ -88,7 +88,7 @@ async function restartApp(item, button) {
     button.textContent = 'Restarting…';
   }
   try {
-    await postSharing(`/_dropserve/api/apps/${encodeURIComponent(item.slug)}/restart`, {});
+    await postSharing(`/_beacon/api/apps/${encodeURIComponent(item.slug)}/restart`, {});
     await loadApps();
   } catch (error) {
     warningNotice.querySelector('p').textContent = error.message;
@@ -102,7 +102,7 @@ async function restartApp(item, button) {
 
 async function updateAppSettings(item, change) {
   try {
-    await postSharing(`/_dropserve/api/apps/${encodeURIComponent(item.slug)}/settings`, change);
+    await postSharing(`/_beacon/api/apps/${encodeURIComponent(item.slug)}/settings`, change);
     await loadApps();
   } catch (error) {
     warningNotice.querySelector('p').textContent = error.message;
@@ -133,7 +133,7 @@ async function copyText(value, button) {
 
 function showQR(targetURL, label = 'Open this address') {
   currentQRURL = new URL(targetURL, window.location.href).href;
-  qrImage.src = `/_dropserve/api/qr?url=${encodeURIComponent(currentQRURL)}`;
+  qrImage.src = `/_beacon/api/qr?url=${encodeURIComponent(currentQRURL)}`;
   qrAddress.textContent = currentQRURL;
   document.querySelector('#qr-title').textContent = label;
   if (typeof qrDialog.showModal === 'function') qrDialog.showModal();
@@ -154,7 +154,7 @@ function addonCard(addon) {
   const heading = document.createElement('h3');
   heading.textContent = `${addon.title} ${addon.version || ''}`.trim();
   const description = document.createElement('p');
-  description.textContent = addon.description || 'Optional files Dropserve needs to run this kind of app.';
+  description.textContent = addon.description || 'Optional files Beacon needs to run this kind of app.';
   const state = document.createElement('p');
   state.className = 'addon-state';
   if (addon.busy) state.textContent = addon.progress > 0 ? `Working… ${addon.progress}%` : 'Working…';
@@ -174,14 +174,14 @@ function addonCard(addon) {
       if (action === 'remove') {
         const warning = addon.name === 'php'
           ? 'Removing the PHP pack deletes the downloaded PHP files. Your apps and their files are untouched.'
-          : `Removing ${addon.title} deletes the downloaded ${addon.title} files and Dropserve-managed database data. Your apps and their files are untouched.`;
+          : `Removing ${addon.title} deletes the downloaded ${addon.title} files and Beacon-managed database data. Your apps and their files are untouched.`;
         const confirmed = window.confirm(warning);
         if (!confirmed) return;
       }
       button.disabled = true;
       state.textContent = action === 'install' ? 'Downloading and verifying…' : `${action[0].toUpperCase()}${action.slice(1)}ing…`;
       try {
-        await postSharing(`/_dropserve/api/addons/${encodeURIComponent(addon.name)}`, { action });
+        await postSharing(`/_beacon/api/addons/${encodeURIComponent(addon.name)}`, { action });
         await refreshAddons();
       } catch (error) {
         state.textContent = error.message;
@@ -203,8 +203,8 @@ function addonCard(addon) {
 }
 
 async function refreshAddons() {
-  const response = await fetch('/_dropserve/api/addons');
-  if (!response.ok) throw new Error((await response.text()).trim() || 'Dropserve could not load add-ons. Try again.');
+  const response = await fetch('/_beacon/api/addons');
+  if (!response.ok) throw new Error((await response.text()).trim() || 'Beacon could not load add-ons. Try again.');
   const addons = await response.json();
   addonsList.replaceChildren(...addons.map(addonCard));
   const busy = addons.some(addon => addon.busy);
@@ -214,7 +214,7 @@ async function refreshAddons() {
   addonsRefreshTimer = 0;
   if (busy && !addonsPanel.hidden) {
     addonsRefreshTimer = window.setTimeout(() => {
-      refreshAddons().catch(() => { addonsList.textContent = 'Dropserve could not refresh add-on progress.'; });
+      refreshAddons().catch(() => { addonsList.textContent = 'Beacon could not refresh add-on progress.'; });
     }, 500);
   }
 }
@@ -224,9 +224,9 @@ function lastLogLines(logs, maximum = 50) {
 }
 
 function fetchLogs(item) {
-  return fetch(`/_dropserve/api/logs/${encodeURIComponent(item.slug)}`)
+  return fetch(`/_beacon/api/logs/${encodeURIComponent(item.slug)}`)
     .then(response => {
-      if (!response.ok) throw new Error('Dropserve could not load these logs. Try again.');
+      if (!response.ok) throw new Error('Beacon could not load these logs. Try again.');
       return response.json();
     });
 }
@@ -241,7 +241,7 @@ function refreshLogs() {
       logOutput.textContent = snapshot.logs || 'This app has not written any output yet.';
     })
     .catch(() => {
-      logState.textContent = 'Dropserve could not refresh these logs.';
+      logState.textContent = 'Beacon could not refresh these logs.';
       logOutput.textContent = 'Try again in a moment.';
     });
 }
@@ -269,8 +269,8 @@ async function showDatabase(item, file) {
   if (typeof databaseDialog.showModal === 'function') databaseDialog.showModal();
   else databaseDialog.setAttribute('open', '');
   try {
-    const response = await fetch(`/_dropserve/api/databases/${encodeURIComponent(item.slug)}?file=${encodeURIComponent(file)}`);
-    if (!response.ok) throw new Error((await response.text()).trim() || 'Dropserve could not read this database. Try again.');
+    const response = await fetch(`/_beacon/api/databases/${encodeURIComponent(item.slug)}?file=${encodeURIComponent(file)}`);
+    if (!response.ok) throw new Error((await response.text()).trim() || 'Beacon could not read this database. Try again.');
     const snapshot = await response.json();
     const tables = snapshot.tables || [];
     databaseState.textContent = tables.length ? `${tables.length} ${tables.length === 1 ? 'table' : 'tables'} · read-only` : 'This database has no user tables.';
@@ -307,7 +307,7 @@ async function showDatabase(item, file) {
     });
     databaseContent.replaceChildren(...sections);
   } catch (error) {
-    databaseState.textContent = error.message || 'Dropserve could not read this database.';
+    databaseState.textContent = error.message || 'Beacon could not read this database.';
   }
 }
 
@@ -357,7 +357,7 @@ function appCard(item, index) {
   if (item.prefers_own_port && ownURL) {
     const rescue = document.createElement('p');
     rescue.className = 'own-port-note';
-    rescue.textContent = 'This app expects to live at the root, so Dropserve is serving it on its own port.';
+    rescue.textContent = 'This app expects to live at the root, so Beacon is serving it on its own port.';
     link.append(rescue);
   }
   if (item.status === 'crashed') {
@@ -419,7 +419,7 @@ function appCard(item, index) {
     if (button.dataset.action === 'open-path') window.location.assign(new URL(pathURL, window.location.href).href);
     if (button.dataset.action === 'copy') copyText(absoluteURL, button);
     if (button.dataset.action === 'qr') showQR(absoluteURL, item.name || item.slug);
-    if (button.dataset.action === 'open-folder') await postSharing('/_dropserve/api/open-folder', { slug: item.slug });
+    if (button.dataset.action === 'open-folder') await postSharing('/_beacon/api/open-folder', { slug: item.slug });
     if (button.dataset.action === 'pin') await updateAppSettings(item, { pinned: !item.pinned });
     if (button.dataset.action === 'hide') {
       const confirmed = item.hidden || window.confirm(`Hide ${item.name || item.slug} from the dashboard? You can show hidden apps again beside the app count.`);
@@ -448,7 +448,7 @@ function appCard(item, index) {
       if (runtime === 'php') setAddonsOpen(true);
       else if (runtime === 'node') window.open('https://nodejs.org/en/download', '_blank', 'noopener');
       else if (runtime === 'python') window.open('https://www.python.org/downloads/', '_blank', 'noopener');
-      else window.open('https://github.com/tanzir71/dropserve#command-apps', '_blank', 'noopener');
+      else window.open('https://github.com/tanzir71/beacon#command-apps', '_blank', 'noopener');
     });
     article.append(install);
   }
@@ -516,7 +516,7 @@ function sharingRow(item) {
   copy.className = 'mini-button';
   qr.className = 'mini-button';
   copy.addEventListener('click', () => copyText(item.url, copy));
-  qr.addEventListener('click', () => showQR(item.url, 'Open Dropserve'));
+  qr.addEventListener('click', () => showQR(item.url, 'Open Beacon'));
   row.append(details, copy, qr);
   if (item.kind === 'tailscale') {
     const secure = item.url.startsWith('https://');
@@ -525,7 +525,7 @@ function sharingRow(item) {
     toggle.addEventListener('click', async () => {
       toggle.disabled = true;
       try {
-        await postSharing('/_dropserve/api/sharing/tailscale', { enabled: !secure });
+        await postSharing('/_beacon/api/sharing/tailscale', { enabled: !secure });
         await reloadSharingState();
       } catch (error) {
         toggle.textContent = error.message;
@@ -585,13 +585,13 @@ async function postSharing(path, payload) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'X-Dropserve-CSRF': csrfToken,
+      'X-Beacon-CSRF': csrfToken,
     },
     body: JSON.stringify(payload),
   });
   if (!response.ok) {
     const detail = (await response.text()).trim();
-    throw new Error(detail || 'Dropserve could not change this setting. Try again.');
+    throw new Error(detail || 'Beacon could not change this setting. Try again.');
   }
 }
 
@@ -609,7 +609,7 @@ function showFunnelConfirmation(item) {
 
 async function changeFunnel(item, enabled, confirmation = '') {
   try {
-    await postSharing(`/_dropserve/api/sharing/funnel/${encodeURIComponent(item.slug)}`, { enabled, confirmation });
+    await postSharing(`/_beacon/api/sharing/funnel/${encodeURIComponent(item.slug)}`, { enabled, confirmation });
     await reloadSharingState();
     if (enabled) funnelDialog.close();
   } catch (error) {
@@ -623,8 +623,8 @@ async function changeFunnel(item, enabled, confirmation = '') {
 }
 
 async function refreshSharing() {
-  const response = await fetch('/_dropserve/api/urls');
-  if (!response.ok) throw new Error('Dropserve could not load sharing addresses. Try again.');
+  const response = await fetch('/_beacon/api/urls');
+  if (!response.ok) throw new Error('Beacon could not load sharing addresses. Try again.');
   const items = await response.json();
   sharingURLs.replaceChildren(...items.map(sharingRow));
 }
@@ -663,7 +663,7 @@ function setAddonsOpen(open) {
   }
   if (open) {
     setSharingOpen(false);
-    refreshAddons().catch(() => { addonsList.textContent = 'Dropserve could not load add-ons.'; });
+    refreshAddons().catch(() => { addonsList.textContent = 'Beacon could not load add-ons.'; });
     addonsClose.focus();
   }
 }
@@ -672,7 +672,7 @@ sharingToggle.addEventListener('click', () => setSharingOpen(sharingPanel.hidden
 sharingClose.addEventListener('click', () => setSharingOpen(false));
 addonsToggle.addEventListener('click', () => setAddonsOpen(addonsPanel.hidden));
 addonsClose.addEventListener('click', () => setAddonsOpen(false));
-warningDiagnose.addEventListener('click', () => window.location.assign('/_dropserve/api/status'));
+warningDiagnose.addEventListener('click', () => window.location.assign('/_beacon/api/status'));
 warningDismiss.addEventListener('click', () => {
   dismissedWarningText = warningNotice.querySelector('p').textContent;
   warningNotice.hidden = true;
@@ -682,7 +682,7 @@ logRefresh.addEventListener('click', refreshLogs);
 localHTTPSToggle.addEventListener('click', async () => {
   localHTTPSToggle.disabled = true;
   try {
-    await postSharing('/_dropserve/api/https', { enabled: localHTTPSToggle.dataset.enabled !== 'true' });
+    await postSharing('/_beacon/api/https', { enabled: localHTTPSToggle.dataset.enabled !== 'true' });
     await reloadSharingState();
   } catch (error) {
     localHTTPSState.textContent = error.message;
@@ -693,12 +693,12 @@ localHTTPSToggle.addEventListener('click', async () => {
 localTrustToggle.addEventListener('click', async () => {
   const removingTrust = localTrustToggle.dataset.installed === 'true';
   if (removingTrust) {
-    const confirmed = window.confirm("Stopping trust makes browsers on this computer warn about Dropserve again. Local HTTPS, Dropserve's certificate files, and your apps are unchanged.");
+    const confirmed = window.confirm("Stopping trust makes browsers on this computer warn about Beacon again. Local HTTPS, Beacon's certificate files, and your apps are unchanged.");
     if (!confirmed) return;
   }
   localTrustToggle.disabled = true;
   try {
-    await postSharing('/_dropserve/api/trust', { installed: localTrustToggle.dataset.installed !== 'true' });
+    await postSharing('/_beacon/api/trust', { installed: localTrustToggle.dataset.installed !== 'true' });
     await loadStatus();
   } catch (error) {
     localHTTPSState.textContent = error.message;
@@ -756,9 +756,9 @@ document.addEventListener('keydown', event => {
 });
 
 function loadApps() {
-  return fetch('/_dropserve/api/apps?include_hidden=1')
+  return fetch('/_beacon/api/apps?include_hidden=1')
     .then(response => {
-      if (!response.ok) throw new Error('Dropserve could not load your apps. Try again.');
+      if (!response.ok) throw new Error('Beacon could not load your apps. Try again.');
       return response.json();
     })
     .then(items => { apps = items; render(); renderFunnelApps(); })
@@ -778,7 +778,7 @@ hiddenAppsToggle.addEventListener('click', () => {
 
 openAppsFolder.addEventListener('click', async () => {
   try {
-    await postSharing('/_dropserve/api/open-folder', {});
+    await postSharing('/_beacon/api/open-folder', {});
   } catch (error) {
     warningNotice.querySelector('p').textContent = error.message;
     warningNotice.hidden = false;
@@ -789,7 +789,7 @@ rescanApps.addEventListener('click', async () => {
   rescanApps.disabled = true;
   rescanApps.textContent = 'Rescanning…';
   try {
-    await postSharing('/_dropserve/api/rescan', {});
+    await postSharing('/_beacon/api/rescan', {});
     await loadApps();
   } catch (error) {
     warningNotice.querySelector('p').textContent = error.message;
@@ -802,7 +802,7 @@ rescanApps.addEventListener('click', async () => {
 
 loadApps();
 if ('EventSource' in window) {
-  const appEvents = new EventSource('/_dropserve/api/events');
+  const appEvents = new EventSource('/_beacon/api/events');
   appEvents.addEventListener('apps-changed', () => {
     loadApps();
     loadStatus().catch(() => {});
@@ -810,8 +810,8 @@ if ('EventSource' in window) {
 }
 
 async function loadStatus() {
-  const response = await fetch('/_dropserve/api/status');
-  if (!response.ok) throw new Error('Dropserve could not load its status. Try again.');
+  const response = await fetch('/_beacon/api/status');
+  if (!response.ok) throw new Error('Beacon could not load its status. Try again.');
   const status = await response.json();
   csrfToken = status.csrf_token || csrfToken;
   activeFunnels = new Map((status.sharing?.public || []).map(entry => [entry.slug, entry]));
@@ -827,9 +827,9 @@ async function loadStatus() {
     if (!dismiss.dataset.bound) {
       dismiss.dataset.bound = 'true';
       dismiss.addEventListener('click', async () => {
-        const dismissal = await fetch('/_dropserve/api/network-change/dismiss', {
+        const dismissal = await fetch('/_beacon/api/network-change/dismiss', {
           method: 'POST',
-          headers: { 'X-Dropserve-CSRF': csrfToken },
+          headers: { 'X-Beacon-CSRF': csrfToken },
         });
         if (dismissal.ok) addressChangeWarning.hidden = true;
       });
@@ -851,7 +851,7 @@ async function loadStatus() {
     dismissedWarningText = '';
   }
   if (status.update?.available) {
-    updateNotice.querySelector('p').textContent = `Dropserve ${status.update.version} is available. Nothing is downloaded automatically.`;
+    updateNotice.querySelector('p').textContent = `Beacon ${status.update.version} is available. Nothing is downloaded automatically.`;
     updateNotice.querySelector('a').href = status.update.url;
     updateNotice.hidden = false;
   } else {

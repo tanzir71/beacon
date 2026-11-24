@@ -7,7 +7,7 @@ import (
 	"runtime"
 	"testing"
 
-	staticserver "github.com/tanzir71/dropserve/internal/static"
+	staticserver "github.com/tanzir71/beacon/internal/static"
 )
 
 func TestPathTraversalIsRefused(t *testing.T) {

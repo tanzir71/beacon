@@ -17,20 +17,20 @@ import (
 	"testing"
 	"time"
 
-	"github.com/tanzir71/dropserve/internal/indexer"
-	"github.com/tanzir71/dropserve/internal/scanner"
-	dropserver "github.com/tanzir71/dropserve/internal/server"
-	"github.com/tanzir71/dropserve/internal/supervisor"
+	"github.com/tanzir71/beacon/internal/indexer"
+	"github.com/tanzir71/beacon/internal/scanner"
+	beaconr "github.com/tanzir71/beacon/internal/server"
+	"github.com/tanzir71/beacon/internal/supervisor"
 )
 
 func TestDashboardAtRoot(t *testing.T) {
 	t.Parallel()
 
-	server, err := dropserver.New(scanner.Options{Roots: []string{t.TempDir()}})
+	server, err := beaconr.New(scanner.Options{Roots: []string{t.TempDir()}})
 	if err != nil {
 		t.Fatalf("create server: %v", err)
 	}
-	request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://dropserve.test/", nil)
+	request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://beacon.test/", nil)
 	response := httptest.NewRecorder()
 	server.Handler().ServeHTTP(response, request)
 	result := response.Result()
@@ -47,7 +47,7 @@ func TestDashboardAtRoot(t *testing.T) {
 	if contentType := result.Header.Get("Content-Type"); !strings.HasPrefix(contentType, "text/html") {
 		t.Fatalf("Content-Type = %q, want text/html", contentType)
 	}
-	for _, expected := range []string{"<title>Dropserve</title>", `id="app-search"`, `autofocus`} {
+	for _, expected := range []string{"<title>Beacon</title>", `id="app-search"`, `autofocus`} {
 		if !strings.Contains(string(body), expected) {
 			t.Fatalf("dashboard body does not contain %q: %s", expected, body)
 		}
@@ -56,12 +56,12 @@ func TestDashboardAtRoot(t *testing.T) {
 
 func TestGlobalRequestBodyLimitRejectsKnownOversizeBeforeRouting(t *testing.T) {
 	root := t.TempDir()
-	server, err := dropserver.New(scanner.Options{Roots: []string{root}})
+	server, err := beaconr.New(scanner.Options{Roots: []string{root}})
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = server.Close() })
-	request := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "http://dropserve.test/anything", nil)
+	request := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "http://beacon.test/anything", nil)
 	request.ContentLength = 64<<20 + 1
 	response := httptest.NewRecorder()
 	server.Handler().ServeHTTP(response, request)
@@ -77,7 +77,7 @@ func TestServerPersistsIndexOutsideAppRoot(t *testing.T) {
 	writeDashboardFixture(t, root, "ledger", "Ledger", "Tracks local records.")
 	stateDirectory := t.TempDir()
 	indexPath := filepath.Join(stateDirectory, "index.json")
-	_, err := dropserver.NewWithOptions(dropserver.Options{
+	_, err := beaconr.NewWithOptions(beaconr.Options{
 		Scanner:   scanner.Options{Roots: []string{root}},
 		IndexPath: indexPath,
 	})
@@ -110,7 +110,7 @@ func TestServerPersistsIndexOutsideAppRoot(t *testing.T) {
 func TestDashboardHandlesZeroAndTwoHundredApps(t *testing.T) {
 	t.Parallel()
 
-	emptyServer, err := dropserver.New(scanner.Options{Roots: []string{t.TempDir()}})
+	emptyServer, err := beaconr.New(scanner.Options{Roots: []string{t.TempDir()}})
 	if err != nil {
 		t.Fatalf("create empty dashboard: %v", err)
 	}
@@ -124,7 +124,7 @@ func TestDashboardHandlesZeroAndTwoHundredApps(t *testing.T) {
 		name := fmt.Sprintf("app-%03d", index)
 		writeDashboardFixture(t, root, name, name, "Scale fixture.")
 	}
-	largeServer, err := dropserver.New(scanner.Options{Roots: []string{root}})
+	largeServer, err := beaconr.New(scanner.Options{Roots: []string{root}})
 	if err != nil {
 		t.Fatalf("create 200-app dashboard: %v", err)
 	}
@@ -141,12 +141,12 @@ func TestDashboardHandlesZeroAndTwoHundredApps(t *testing.T) {
 	}
 }
 
-func TestDropserveNamespaceCannotBeShadowed(t *testing.T) {
+func TestBeaconNamespaceCannotBeShadowed(t *testing.T) {
 	t.Parallel()
 
 	root := t.TempDir()
-	writeDashboardFixture(t, root, "_dropserve", "Impostor", "This app must never mount.")
-	server, err := dropserver.New(scanner.Options{Roots: []string{root}})
+	writeDashboardFixture(t, root, "_beacon", "Impostor", "This app must never mount.")
+	server, err := beaconr.New(scanner.Options{Roots: []string{root}})
 	if err != nil {
 		t.Fatalf("create reserved-route server: %v", err)
 	}
@@ -155,11 +155,11 @@ func TestDropserveNamespaceCannotBeShadowed(t *testing.T) {
 	if len(apps) != 0 {
 		t.Fatalf("reserved app appeared in API: %#v", apps)
 	}
-	for _, requestPath := range []string{"/", "/_dropserve/app.css", "/_dropserve/api/apps"} {
+	for _, requestPath := range []string{"/", "/_beacon/app.css", "/_beacon/api/apps"} {
 		request := httptest.NewRequestWithContext(
 			context.Background(),
 			http.MethodGet,
-			"http://dropserve.test"+requestPath,
+			"http://beacon.test"+requestPath,
 			nil,
 		)
 		response := httptest.NewRecorder()
@@ -184,14 +184,14 @@ func TestDashboardReadOnlyOperationalAPIs(t *testing.T) {
 
 	root := t.TempDir()
 	writeDashboardFixture(t, root, "notes", "Notes", "Personal notes.")
-	server, err := dropserver.New(scanner.Options{Roots: []string{root}})
+	server, err := beaconr.New(scanner.Options{Roots: []string{root}})
 	if err != nil {
 		t.Fatalf("create operational API server: %v", err)
 	}
 	httpServer := httptest.NewServer(server.Handler())
 	defer httpServer.Close()
 
-	healthResponse := getWithContext(t, httpServer.Client(), httpServer.URL+"/_dropserve/healthz")
+	healthResponse := getWithContext(t, httpServer.Client(), httpServer.URL+"/_beacon/healthz")
 	healthBody, readErr := io.ReadAll(healthResponse.Body)
 	_ = healthResponse.Body.Close()
 	if readErr != nil {
@@ -201,7 +201,7 @@ func TestDashboardReadOnlyOperationalAPIs(t *testing.T) {
 		t.Fatalf("health response = %d %q, want 200 ok", healthResponse.StatusCode, healthBody)
 	}
 
-	statusResponse := getWithContext(t, httpServer.Client(), httpServer.URL+"/_dropserve/api/status")
+	statusResponse := getWithContext(t, httpServer.Client(), httpServer.URL+"/_beacon/api/status")
 	var status struct {
 		Version       string `json:"version"`
 		UptimeSeconds int64  `json:"uptime_seconds"`
@@ -220,7 +220,7 @@ func TestDashboardReadOnlyOperationalAPIs(t *testing.T) {
 		t.Fatalf("status payload is incomplete: %#v", status)
 	}
 
-	detailResponse := getWithContext(t, httpServer.Client(), httpServer.URL+"/_dropserve/api/apps/notes")
+	detailResponse := getWithContext(t, httpServer.Client(), httpServer.URL+"/_beacon/api/apps/notes")
 	var detail struct {
 		Slug      string   `json:"slug"`
 		Path      string   `json:"path"`
@@ -236,7 +236,7 @@ func TestDashboardReadOnlyOperationalAPIs(t *testing.T) {
 		t.Fatalf("app detail is incomplete: status=%d detail=%#v", detailResponse.StatusCode, detail)
 	}
 
-	missingResponse := getWithContext(t, httpServer.Client(), httpServer.URL+"/_dropserve/api/apps/missing")
+	missingResponse := getWithContext(t, httpServer.Client(), httpServer.URL+"/_beacon/api/apps/missing")
 	_ = missingResponse.Body.Close()
 	if missingResponse.StatusCode != http.StatusNotFound {
 		t.Fatalf("missing app detail returned %d, want 404", missingResponse.StatusCode)
@@ -263,7 +263,7 @@ func fetchAppSlugs(t *testing.T, handler http.Handler) []string {
 	request := httptest.NewRequestWithContext(
 		context.Background(),
 		http.MethodGet,
-		"http://dropserve.test/_dropserve/api/apps",
+		"http://beacon.test/_beacon/api/apps",
 		nil,
 	)
 	response := httptest.NewRecorder()
@@ -291,7 +291,7 @@ func fetchAppSlugs(t *testing.T, handler http.Handler) []string {
 func TestQREndpointReturnsPNG(t *testing.T) {
 	t.Parallel()
 
-	server, err := dropserver.New(scanner.Options{Roots: []string{t.TempDir()}})
+	server, err := beaconr.New(scanner.Options{Roots: []string{t.TempDir()}})
 	if err != nil {
 		t.Fatalf("create QR server: %v", err)
 	}
@@ -332,7 +332,7 @@ func requestQR(t *testing.T, handler http.Handler, targetURL string) qrResponse 
 	request := httptest.NewRequestWithContext(
 		context.Background(),
 		http.MethodGet,
-		"http://dropserve.test/_dropserve/api/qr?url="+url.QueryEscape(targetURL),
+		"http://beacon.test/_beacon/api/qr?url="+url.QueryEscape(targetURL),
 		nil,
 	)
 	recorder := httptest.NewRecorder()
@@ -354,14 +354,14 @@ func TestSearchFindsREADMEContent(t *testing.T) {
 	root := t.TempDir()
 	writeDashboardFixture(t, root, "atlas", "Atlas", "A quiet tool.")
 	writeDashboardFixture(t, root, "beacon", "Beacon", "Contains the copperlantern field guide for night work.")
-	server, err := dropserver.New(scanner.Options{Roots: []string{root}})
+	server, err := beaconr.New(scanner.Options{Roots: []string{root}})
 	if err != nil {
 		t.Fatalf("create search server: %v", err)
 	}
 	request := httptest.NewRequestWithContext(
 		context.Background(),
 		http.MethodGet,
-		"http://dropserve.test/_dropserve/api/search?q=copperlantern",
+		"http://beacon.test/_beacon/api/search?q=copperlantern",
 		nil,
 	)
 	response := httptest.NewRecorder()
@@ -402,14 +402,14 @@ func TestSearchFindsFilename(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(templates, "copperneedle-invoice.html"), []byte("invoice"), 0o600); err != nil {
 		t.Fatalf("write searchable filename: %v", err)
 	}
-	server, err := dropserver.New(scanner.Options{Roots: []string{root}})
+	server, err := beaconr.New(scanner.Options{Roots: []string{root}})
 	if err != nil {
 		t.Fatalf("create search server: %v", err)
 	}
 	request := httptest.NewRequestWithContext(
 		context.Background(),
 		http.MethodGet,
-		"http://dropserve.test/_dropserve/api/search?q=copperneedle",
+		"http://beacon.test/_beacon/api/search?q=copperneedle",
 		nil,
 	)
 	response := httptest.NewRecorder()
@@ -442,14 +442,14 @@ func TestSearchRanksNameAboveFilename(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(root, "archive", "invoice-history.txt"), []byte("history"), 0o600); err != nil {
 		t.Fatalf("write filename match: %v", err)
 	}
-	server, err := dropserver.New(scanner.Options{Roots: []string{root}})
+	server, err := beaconr.New(scanner.Options{Roots: []string{root}})
 	if err != nil {
 		t.Fatalf("create ranking server: %v", err)
 	}
 	request := httptest.NewRequestWithContext(
 		context.Background(),
 		http.MethodGet,
-		"http://dropserve.test/_dropserve/api/search?q=invoice",
+		"http://beacon.test/_beacon/api/search?q=invoice",
 		nil,
 	)
 	response := httptest.NewRecorder()
@@ -475,7 +475,7 @@ func TestSearchRanksNameAboveFilename(t *testing.T) {
 func TestAdvertisedURLsAllRespond(t *testing.T) {
 	t.Parallel()
 
-	server, err := dropserver.New(scanner.Options{Roots: []string{t.TempDir()}})
+	server, err := beaconr.New(scanner.Options{Roots: []string{t.TempDir()}})
 	if err != nil {
 		t.Fatalf("create URL server: %v", err)
 	}
@@ -485,7 +485,7 @@ func TestAdvertisedURLsAllRespond(t *testing.T) {
 	request, err := http.NewRequestWithContext(
 		context.Background(),
 		http.MethodGet,
-		httpServer.URL+"/_dropserve/api/urls",
+		httpServer.URL+"/_beacon/api/urls",
 		nil,
 	)
 	if err != nil {
@@ -553,7 +553,7 @@ func TestAppsAPIListsEveryFixture(t *testing.T) {
 		t.Fatal("runtime.Caller could not locate fixtures")
 	}
 	fixtures := filepath.Clean(filepath.Join(filepath.Dir(sourceFile), "..", "..", "testdata", "fixtures"))
-	server, err := dropserver.NewWithOptions(dropserver.Options{
+	server, err := beaconr.NewWithOptions(beaconr.Options{
 		Scanner: scanner.Options{Roots: []string{fixtures}},
 		Supervisor: supervisor.Options{
 			RestartDelays: []time.Duration{10 * time.Millisecond},
@@ -570,7 +570,7 @@ func TestAppsAPIListsEveryFixture(t *testing.T) {
 	request := httptest.NewRequestWithContext(
 		context.Background(),
 		http.MethodGet,
-		"http://dropserve.test/_dropserve/api/apps",
+		"http://beacon.test/_beacon/api/apps",
 		nil,
 	)
 	response := httptest.NewRecorder()

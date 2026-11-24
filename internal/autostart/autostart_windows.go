@@ -1,6 +1,6 @@
 //go:build windows
 
-// Package autostart manages Dropserve's per-user Windows Scheduled Task.
+// Package autostart manages Beacon's per-user Windows Scheduled Task.
 package autostart
 
 import (
@@ -17,7 +17,7 @@ import (
 	"unicode/utf16"
 )
 
-const taskName = "Dropserve"
+const taskName = "Beacon"
 
 type taskDocument struct {
 	XMLName          xml.Name         `xml:"Task"`
@@ -87,7 +87,7 @@ type taskExecAction struct {
 	Arguments string `xml:"Arguments"`
 }
 
-// Enable creates or replaces the current user's Dropserve logon task.
+// Enable creates or replaces the current user's Beacon logon task.
 func Enable(executable string) error {
 	currentUser, err := user.Current()
 	if err != nil {
@@ -98,7 +98,7 @@ func Enable(executable string) error {
 		return err
 	}
 
-	taskFile, err := os.CreateTemp("", "dropserve-autostart-*.xml")
+	taskFile, err := os.CreateTemp("", "beacon-autostart-*.xml")
 	if err != nil {
 		return fmt.Errorf("create temporary task XML: %w", err)
 	}
@@ -121,7 +121,7 @@ func Enable(executable string) error {
 	return verifyEnabled("Windows Scheduled Task", Enabled)
 }
 
-// Disable removes the current user's Dropserve logon task. It is idempotent.
+// Disable removes the current user's Beacon logon task. It is idempotent.
 func Disable() error {
 	enabled, err := Enabled()
 	if err != nil {
@@ -142,7 +142,7 @@ func Disable() error {
 	return commandError("delete the Windows Scheduled Task", output, deleteErr)
 }
 
-// Enabled reports the actual presence of Dropserve's Windows Scheduled Task.
+// Enabled reports the actual presence of Beacon's Windows Scheduled Task.
 func Enabled() (bool, error) {
 	output, err := runTaskCommand("/Query", "/TN", taskName, "/XML")
 	if err == nil {
@@ -160,7 +160,7 @@ func makeTaskXML(userName, executable string) ([]byte, error) {
 		Version:   "1.4",
 		Namespace: "http://schemas.microsoft.com/windows/2004/02/mit/task",
 		RegistrationInfo: registrationInfo{
-			Description: "Start Dropserve when this user logs on.",
+			Description: "Start Beacon when this user logs on.",
 		},
 		Triggers: taskTriggers{Logon: taskLogonTrigger{
 			Enabled: true,

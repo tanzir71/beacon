@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/tanzir71/dropserve/internal/scanner"
-	dropserver "github.com/tanzir71/dropserve/internal/server"
+	"github.com/tanzir71/beacon/internal/scanner"
+	beaconr "github.com/tanzir71/beacon/internal/server"
 )
 
 func main() {
@@ -17,7 +17,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("resolve accessibility fixtures: %v", err)
 	}
-	dashboard, err := dropserver.New(scanner.Options{Roots: []string{appsRoot}})
+	dashboard, err := beaconr.New(scanner.Options{Roots: []string{appsRoot}})
 	if err != nil {
 		log.Fatalf("create accessibility server: %v", err)
 	}

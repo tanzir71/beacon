@@ -212,7 +212,7 @@ func loadFunnelState(path string) (map[string]FunnelEntry, error) {
 	if path == "" {
 		return entries, nil
 	}
-	// #nosec G304 -- path is the configured Dropserve machine-state path.
+	// #nosec G304 -- path is the configured Beacon machine-state path.
 	data, err := os.ReadFile(path)
 	if errors.Is(err, os.ErrNotExist) {
 		return entries, nil

@@ -12,9 +12,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/tanzir71/dropserve/internal/scanner"
-	dropserver "github.com/tanzir71/dropserve/internal/server"
-	"github.com/tanzir71/dropserve/internal/sqlitebrowser"
+	"github.com/tanzir71/beacon/internal/scanner"
+	beaconr "github.com/tanzir71/beacon/internal/server"
+	"github.com/tanzir71/beacon/internal/sqlitebrowser"
 	_ "modernc.org/sqlite"
 )
 
@@ -52,7 +52,7 @@ func TestDiscoveredSQLiteDatabaseIsBrowsableFromDashboard(t *testing.T) {
 		t.Fatalf("close SQLite app fixture: %v", err)
 	}
 
-	server, err := dropserver.New(scanner.Options{Roots: []string{appsRoot}})
+	server, err := beaconr.New(scanner.Options{Roots: []string{appsRoot}})
 	if err != nil {
 		t.Fatalf("start server with SQLite app: %v", err)
 	}
@@ -60,7 +60,7 @@ func TestDiscoveredSQLiteDatabaseIsBrowsableFromDashboard(t *testing.T) {
 	httpServer := httptest.NewServer(server.Handler())
 	defer httpServer.Close()
 
-	request, err := http.NewRequestWithContext(ctx, http.MethodGet, httpServer.URL+"/_dropserve/api/databases/inventory?file="+url.QueryEscape("catalog.db"), nil)
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, httpServer.URL+"/_beacon/api/databases/inventory?file="+url.QueryEscape("catalog.db"), nil)
 	if err != nil {
 		t.Fatalf("create SQLite dashboard request: %v", err)
 	}

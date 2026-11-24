@@ -10,9 +10,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/tanzir71/dropserve/internal/indexer"
-	"github.com/tanzir71/dropserve/internal/scanner"
-	dropserver "github.com/tanzir71/dropserve/internal/server"
+	"github.com/tanzir71/beacon/internal/indexer"
+	"github.com/tanzir71/beacon/internal/scanner"
+	beaconr "github.com/tanzir71/beacon/internal/server"
 )
 
 func TestHotConfigurationRebuildsAppsAndKeepsLastGoodSnapshot(t *testing.T) {
@@ -20,7 +20,7 @@ func TestHotConfigurationRebuildsAppsAndKeepsLastGoodSnapshot(t *testing.T) {
 	secondRoot := t.TempDir()
 	writeReloadApp(t, firstRoot, "first", "first app")
 	writeReloadApp(t, secondRoot, "second", "second app")
-	server, err := dropserver.NewWithOptions(dropserver.Options{Scanner: scanner.Options{Roots: []string{firstRoot}}, DashboardTitle: "Before"})
+	server, err := beaconr.NewWithOptions(beaconr.Options{Scanner: scanner.Options{Roots: []string{firstRoot}}, DashboardTitle: "Before"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -30,7 +30,7 @@ func TestHotConfigurationRebuildsAppsAndKeepsLastGoodSnapshot(t *testing.T) {
 		t.Fatalf("apply valid hot config: %v", err)
 	}
 	assertReloadBody(t, server, "/", "second app")
-	assertReloadBody(t, server, "/_dropserve/", "<title>After</title>")
+	assertReloadBody(t, server, "/_beacon/", "<title>After</title>")
 	entries := reloadEntries(t, server)
 	if len(entries) != 1 || entries[0].Slug != "second" {
 		t.Fatalf("hot-reloaded entries = %#v", entries)
@@ -41,7 +41,7 @@ func TestHotConfigurationRebuildsAppsAndKeepsLastGoodSnapshot(t *testing.T) {
 		t.Fatal("invalid hot config unexpectedly succeeded")
 	}
 	assertReloadBody(t, server, "/", "second app")
-	assertReloadBody(t, server, "/_dropserve/", "<title>After</title>")
+	assertReloadBody(t, server, "/_beacon/", "<title>After</title>")
 }
 
 func writeReloadApp(t *testing.T, root, name, body string) {
@@ -55,9 +55,9 @@ func writeReloadApp(t *testing.T, root, name, body string) {
 	}
 }
 
-func assertReloadBody(t *testing.T, server *dropserver.Server, path, want string) {
+func assertReloadBody(t *testing.T, server *beaconr.Server, path, want string) {
 	t.Helper()
-	request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://dropserve.test"+path, nil)
+	request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://beacon.test"+path, nil)
 	request.RemoteAddr = "127.0.0.1:5000"
 	response := httptest.NewRecorder()
 	server.Handler().ServeHTTP(response, request)
@@ -66,9 +66,9 @@ func assertReloadBody(t *testing.T, server *dropserver.Server, path, want string
 	}
 }
 
-func reloadEntries(t *testing.T, server *dropserver.Server) []indexer.Entry {
+func reloadEntries(t *testing.T, server *beaconr.Server) []indexer.Entry {
 	t.Helper()
-	request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://dropserve.test/_dropserve/api/apps", nil)
+	request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://beacon.test/_beacon/api/apps", nil)
 	response := httptest.NewRecorder()
 	server.Handler().ServeHTTP(response, request)
 	var entries []indexer.Entry

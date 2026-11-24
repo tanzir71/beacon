@@ -9,8 +9,8 @@ $alpineURL = 'https://dl-cdn.alpinelinux.org/alpine/v3.24/releases/x86_64/alpine
 $alpineSHA256 = '41f73e3cf5fa919b8aa5ca6b30dc48f0da2720776d7423e2a7748211456fe081'
 $installerPath = (Resolve-Path -LiteralPath $Installer).Path
 $runID = [Guid]::NewGuid().ToString('N')
-$distro = 'DropserveM10Fresh-' + $runID.Substring(0, 12)
-$sandbox = Join-Path ([System.IO.Path]::GetTempPath()) ('dropserve-fresh-machine-' + $runID)
+$distro = 'BeaconM10Fresh-' + $runID.Substring(0, 12)
+$sandbox = Join-Path ([System.IO.Path]::GetTempPath()) ('beacon-fresh-machine-' + $runID)
 $installDirectory = Join-Path $sandbox 'installed'
 $appsDirectory = Join-Path $sandbox 'Apps'
 $appDirectory = Join-Path $appsDirectory 'fresh-machine'
@@ -19,7 +19,7 @@ $archivePath = Join-Path $sandbox 'alpine-minirootfs.tar.gz'
 $wslDirectory = Join-Path $sandbox 'wsl'
 $server = $null
 $distroRegistered = $false
-$probeRuleName = 'DropserveM10WSL2Probe-' + $runID.Substring(0, 12)
+$probeRuleName = 'BeaconM10WSL2Probe-' + $runID.Substring(0, 12)
 $probeRuleCreated = $false
 $transcript = [System.Collections.Generic.List[string]]::new()
 
@@ -60,10 +60,10 @@ try {
     if ($install.ExitCode -ne 0) {
         throw "silent installer exited $($install.ExitCode)"
     }
-    $desktopBinary = Join-Path $installDirectory 'dropserve.exe'
-    $cliBinary = Join-Path $installDirectory 'dropserve-cli.exe'
+    $desktopBinary = Join-Path $installDirectory 'beacon.exe'
+    $cliBinary = Join-Path $installDirectory 'beacon-cli.exe'
     if (!(Test-Path -LiteralPath $desktopBinary -PathType Leaf) -or !(Test-Path -LiteralPath $cliBinary -PathType Leaf)) {
-        throw 'fresh Windows install did not contain both Dropserve binaries'
+        throw 'fresh Windows install did not contain both Beacon binaries'
     }
 
     $stdoutPath = Join-Path $sandbox 'server.stdout.log'
@@ -87,15 +87,15 @@ try {
     }
     if (!$healthy) {
         $stderrText = if (Test-Path -LiteralPath $stderrPath) { Get-Content -LiteralPath $stderrPath -Raw } else { '' }
-        throw "freshly installed Dropserve did not become healthy: $healthOutput; stderr=$stderrText"
+        throw "freshly installed Beacon did not become healthy: $healthOutput; stderr=$stderrText"
     }
     $state = Get-Content -LiteralPath $statePath -Raw | ConvertFrom-Json
     $port = [int]$state.http_port
     if ($port -lt 1 -or $port -gt 65535) {
-        throw "freshly installed Dropserve persisted invalid port $port"
+        throw "freshly installed Beacon persisted invalid port $port"
     }
 
-    $installedRule = Get-NetFirewallRule -DisplayName Dropserve -ErrorAction Stop
+    $installedRule = Get-NetFirewallRule -DisplayName Beacon -ErrorAction Stop
     $installedApplication = $installedRule | Get-NetFirewallApplicationFilter
     if ($installedRule.Profile -ne 'Private' -or ![string]::Equals($installedApplication.Program, $desktopBinary, [StringComparison]::OrdinalIgnoreCase)) {
         throw "installer firewall rule is not restricted to the private profile and exact desktop binary: profile=$($installedRule.Profile) program=$($installedApplication.Program)"
@@ -135,7 +135,7 @@ try {
         throw "fresh-machine silent uninstaller exited $($uninstall.ExitCode)"
     }
     if (!$server.WaitForExit(10000)) {
-        throw 'fresh-machine uninstaller did not stop Dropserve'
+        throw 'fresh-machine uninstaller did not stop Beacon'
     }
     $server = $null
     $deleteDeadline = [DateTime]::UtcNow.AddSeconds(10)
@@ -145,13 +145,13 @@ try {
     if (Test-Path -LiteralPath $installDirectory) {
         throw "fresh-machine uninstaller left $installDirectory"
     }
-    & schtasks.exe /Query /TN Dropserve *> $null
+    & schtasks.exe /Query /TN Beacon *> $null
     if ($LASTEXITCODE -eq 0) {
-        throw 'fresh-machine uninstaller left the Dropserve Scheduled Task'
+        throw 'fresh-machine uninstaller left the Beacon Scheduled Task'
     }
-    $firewallAfter = & netsh.exe advfirewall firewall show rule name=Dropserve 2>&1 | Out-String
-    if ($firewallAfter -match 'Rule Name:\s+Dropserve') {
-        throw "fresh-machine uninstaller left the Dropserve firewall rule: $firewallAfter"
+    $firewallAfter = & netsh.exe advfirewall firewall show rule name=Beacon 2>&1 | Out-String
+    if ($firewallAfter -match 'Rule Name:\s+Beacon') {
+        throw "fresh-machine uninstaller left the Beacon firewall rule: $firewallAfter"
     }
     $transcript.Add('uninstall=no process, task, firewall rule, or install directory')
 }

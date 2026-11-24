@@ -60,10 +60,10 @@ func TestDashboardInteractionSurfaceIsWired(t *testing.T) {
 		}
 	}
 	for _, marker := range []string{
-		"/_dropserve/api/urls",
-		"/_dropserve/api/qr?url=",
-		"/_dropserve/api/events",
-		"/_dropserve/api/status",
+		"/_beacon/api/urls",
+		"/_beacon/api/qr?url=",
+		"/_beacon/api/events",
+		"/_beacon/api/status",
 		"new EventSource",
 		"navigator.clipboard",
 		"showModal",
@@ -82,9 +82,9 @@ func TestDashboardTitleAndThemeAreConfiguredWithoutUnsafeMarkup(t *testing.T) {
 		t.Fatalf("create configured dashboard: %v", err)
 	}
 	response := httptest.NewRecorder()
-	httpHandler.ServeHTTP(response, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://dropserve.test/_dropserve/", nil))
+	httpHandler.ServeHTTP(response, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://beacon.test/_beacon/", nil))
 	body := response.Body.String()
-	for _, marker := range []string{`<title>&lt;My &amp; Apps&gt;</title>`, `data-dropserve-theme="dark"`, `<strong>&lt;My &amp; Apps&gt;</strong>`} {
+	for _, marker := range []string{`<title>&lt;My &amp; Apps&gt;</title>`, `data-beacon-theme="dark"`, `<strong>&lt;My &amp; Apps&gt;</strong>`} {
 		if !strings.Contains(body, marker) {
 			t.Fatalf("configured dashboard is missing %q: %s", marker, body)
 		}
@@ -110,8 +110,8 @@ func TestSharingControlsAreWired(t *testing.T) {
 		}
 	}
 	for _, marker := range []string{
-		"/_dropserve/api/sharing/tailscale",
-		"/_dropserve/api/sharing/funnel/",
+		"/_beacon/api/sharing/tailscale",
+		"/_beacon/api/sharing/funnel/",
 		"Use HTTPS anywhere",
 		"renderFunnelApps",
 		"Share…",
@@ -139,15 +139,15 @@ func TestLocalHTTPSExplanationAndControlsAreWired(t *testing.T) {
 		"Prefer Tailscale",
 		"This adds a security certificate created on this computer to the list your browsers trust",
 		"It affects only this computer. You can remove that trust any time.",
-		"/_dropserve/api/https/root.pem",
+		"/_beacon/api/https/root.pem",
 	} {
 		if !strings.Contains(string(index), marker) {
 			t.Errorf("dashboard HTML does not contain local HTTPS marker %q", marker)
 		}
 	}
 	for _, marker := range []string{
-		"/_dropserve/api/https",
-		"/_dropserve/api/trust",
+		"/_beacon/api/https",
+		"/_beacon/api/trust",
 		"Enable local HTTPS",
 		"Trust on this computer",
 		"Remove local trust",
@@ -178,7 +178,7 @@ func TestDashboardCommandLogSurfaceIsWired(t *testing.T) {
 			t.Fatalf("dashboard HTML does not contain log marker %q", marker)
 		}
 	}
-	for _, marker := range []string{"/_dropserve/api/logs/", "View logs", "crash-preview", "lastLogLines"} {
+	for _, marker := range []string{"/_beacon/api/logs/", "View logs", "crash-preview", "lastLogLines"} {
 		if !strings.Contains(string(script), marker) {
 			t.Fatalf("dashboard JavaScript does not contain log marker %q", marker)
 		}
@@ -236,7 +236,7 @@ func TestDashboardSQLiteBrowserSurfaceIsWired(t *testing.T) {
 			t.Errorf("dashboard HTML does not contain database marker %q", marker)
 		}
 	}
-	for _, marker := range []string{"Browse database", "/_dropserve/api/databases/", "first 100 rows", "read-only"} {
+	for _, marker := range []string{"Browse database", "/_beacon/api/databases/", "first 100 rows", "read-only"} {
 		if !strings.Contains(string(script), marker) {
 			t.Errorf("dashboard JavaScript does not contain database marker %q", marker)
 		}
@@ -255,7 +255,7 @@ func TestDashboardAddonSurfaceExplainsOptionalAndDestructiveActions(t *testing.T
 			t.Errorf("dashboard HTML does not contain add-on marker %q", marker)
 		}
 	}
-	for _, marker := range []string{"/_dropserve/api/addons/", "Removing the PHP pack deletes the downloaded PHP files. Your apps and their files are untouched.", "Dropserve-managed database data", "Downloading and verifying", "address apps use to connect"} {
+	for _, marker := range []string{"/_beacon/api/addons/", "Removing the PHP pack deletes the downloaded PHP files. Your apps and their files are untouched.", "Beacon-managed database data", "Downloading and verifying", "address apps use to connect"} {
 		if !strings.Contains(string(script), marker) {
 			t.Errorf("dashboard JavaScript does not contain add-on marker %q", marker)
 		}

@@ -40,7 +40,7 @@ func newPortRegistry(path string, first, last int) (*portRegistry, error) {
 	if path == "" {
 		return registry, nil
 	}
-	// #nosec G304 -- path is derived from Dropserve's configured state directory.
+	// #nosec G304 -- path is derived from Beacon's configured state directory.
 	content, err := os.ReadFile(path)
 	if errors.Is(err, os.ErrNotExist) {
 		return registry, nil

@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/tanzir71/dropserve/internal/config"
-	"github.com/tanzir71/dropserve/internal/state"
+	"github.com/tanzir71/beacon/internal/config"
+	"github.com/tanzir71/beacon/internal/state"
 )
 
 func TestHealthyReportContainsEverySupportCheck(t *testing.T) {

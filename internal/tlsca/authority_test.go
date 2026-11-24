@@ -50,7 +50,7 @@ func TestGeneratedLeafValidatesForEveryLocalAddress(t *testing.T) {
 		"::1",
 		"darkhorse",
 		"darkhorse.local",
-		"dropserve.local",
+		"beacon.local",
 		"192.168.50.24",
 	} {
 		if _, err := leaf.Verify(x509.VerifyOptions{

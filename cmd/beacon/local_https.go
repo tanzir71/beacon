@@ -14,10 +14,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/tanzir71/dropserve/internal/dashboard"
-	dropserver "github.com/tanzir71/dropserve/internal/server"
-	"github.com/tanzir71/dropserve/internal/state"
-	"github.com/tanzir71/dropserve/internal/tlsca"
+	"github.com/tanzir71/beacon/internal/dashboard"
+	beaconr "github.com/tanzir71/beacon/internal/server"
+	"github.com/tanzir71/beacon/internal/state"
+	"github.com/tanzir71/beacon/internal/tlsca"
 )
 
 type localHTTPSOptions struct {
@@ -35,7 +35,7 @@ type localHTTPSController struct {
 	mu             sync.RWMutex
 	options        localHTTPSOptions
 	authority      *tlsca.Authority
-	runtime        *dropserver.HTTPSRuntime
+	runtime        *beaconr.HTTPSRuntime
 	listener       net.Listener
 	port           int
 	trustInstalled bool
@@ -91,7 +91,7 @@ func (controller *localHTTPSController) enableLocked(ctx context.Context) error 
 		return controller.failLocked(errors.New("a state path is required to store local HTTPS certificates"))
 	}
 	if controller.options.Handler == nil || controller.options.Handler() == nil {
-		return controller.failLocked(errors.New("the Dropserve handler is not ready"))
+		return controller.failLocked(errors.New("the Beacon handler is not ready"))
 	}
 	port := controller.options.PreferredPort
 	if port == 0 {
@@ -127,7 +127,7 @@ func (controller *localHTTPSController) enableLocked(ctx context.Context) error 
 			return controller.failLocked(fmt.Errorf("save HTTPS setting: %w", err))
 		}
 	}
-	runtime := dropserver.NewHTTPSRuntime(controller.options.Handler(), authority.TLSCertificate)
+	runtime := beaconr.NewHTTPSRuntime(controller.options.Handler(), authority.TLSCertificate)
 	runtime.Start(listener)
 	controller.authority = authority
 	controller.runtime = runtime
@@ -195,7 +195,7 @@ func (controller *localHTTPSController) RootCertificate() ([]byte, error) {
 	if controller.options.StateDirectory == "" {
 		return nil, errors.New("enable local HTTPS before downloading its certificate")
 	}
-	content, err := os.ReadFile(controller.rootPath()) // #nosec G304 -- fixed filename under Dropserve's state directory.
+	content, err := os.ReadFile(controller.rootPath()) // #nosec G304 -- fixed filename under Beacon's state directory.
 	if err != nil {
 		return nil, fmt.Errorf("read local root certificate: %w", err)
 	}
@@ -242,7 +242,7 @@ func (controller *localHTTPSController) failLocked(err error) error {
 func trustCommand(arguments []string, stdout, stderr io.Writer) int {
 	statePath, err := state.DefaultPath()
 	if err != nil {
-		_, _ = fmt.Fprintf(stderr, "Dropserve could not find its state folder: %v\n", err)
+		_, _ = fmt.Fprintf(stderr, "Beacon could not find its state folder: %v\n", err)
 		return 1
 	}
 	return trustCommandWithStore(arguments, stdout, stderr, statePath, nil)
@@ -256,7 +256,7 @@ func trustCommandWithStore(
 	store tlsca.TrustStore,
 ) int {
 	if len(arguments) != 1 {
-		_, _ = fmt.Fprintln(stderr, "Choose a trust action: dropserve trust install, uninstall, or status")
+		_, _ = fmt.Fprintln(stderr, "Choose a trust action: beacon trust install, uninstall, or status")
 		return 2
 	}
 	rootPath := filepath.Join(filepath.Dir(statePath), "ca", "root.pem")
@@ -268,22 +268,22 @@ func trustCommandWithStore(
 	switch arguments[0] {
 	case "--install", "install":
 		if err := controller.Install(); err != nil {
-			_, _ = fmt.Fprintf(stderr, "Dropserve could not add its local HTTPS certificate to this computer: %v\n", err)
+			_, _ = fmt.Fprintf(stderr, "Beacon could not add its local HTTPS certificate to this computer: %v\n", err)
 			return 1
 		}
-		_, _ = fmt.Fprintln(stdout, "This computer now trusts Dropserve's local HTTPS certificate. This affects only this computer; run 'dropserve trust --uninstall' to stop trusting it.")
+		_, _ = fmt.Fprintln(stdout, "This computer now trusts Beacon's local HTTPS certificate. This affects only this computer; run 'beacon trust --uninstall' to stop trusting it.")
 		return 0
 	case "--uninstall", "uninstall":
 		if err := controller.Uninstall(); err != nil {
-			_, _ = fmt.Fprintf(stderr, "Dropserve could not stop this computer from trusting its local HTTPS certificate: %v\n", err)
+			_, _ = fmt.Fprintf(stderr, "Beacon could not stop this computer from trusting its local HTTPS certificate: %v\n", err)
 			return 1
 		}
-		_, _ = fmt.Fprintln(stdout, "This computer no longer trusts Dropserve's local HTTPS certificate. Dropserve's certificate files and your apps are unchanged.")
+		_, _ = fmt.Fprintln(stdout, "This computer no longer trusts Beacon's local HTTPS certificate. Beacon's certificate files and your apps are unchanged.")
 		return 0
 	case "status", "--status":
 		installed, err := tlsca.IsTrusted(rootPath)
 		if err != nil {
-			_, _ = fmt.Fprintf(stderr, "Dropserve could not read local HTTPS trust: %v\n", err)
+			_, _ = fmt.Fprintf(stderr, "Beacon could not read local HTTPS trust: %v\n", err)
 			return 1
 		}
 		if installed {
@@ -293,7 +293,7 @@ func trustCommandWithStore(
 		}
 		return 0
 	default:
-		_, _ = fmt.Fprintln(stderr, "Choose a trust action: dropserve trust install, uninstall, or status")
+		_, _ = fmt.Fprintln(stderr, "Choose a trust action: beacon trust install, uninstall, or status")
 		return 2
 	}
 }

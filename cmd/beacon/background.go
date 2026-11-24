@@ -5,7 +5,7 @@ import (
 	"strconv"
 )
 
-const backgroundConsoleProbeEnvironment = "DROPSERVE_BACKGROUND_CONSOLE_PROBE"
+const backgroundConsoleProbeEnvironment = "BEACON_BACKGROUND_CONSOLE_PROBE"
 
 func writeBackgroundConsoleProbe() error {
 	probePath := os.Getenv(backgroundConsoleProbeEnvironment)

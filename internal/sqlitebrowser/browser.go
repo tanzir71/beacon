@@ -1,4 +1,4 @@
-// Package sqlitebrowser reads SQLite databases for the Dropserve dashboard.
+// Package sqlitebrowser reads SQLite databases for the Beacon dashboard.
 package sqlitebrowser
 
 import (

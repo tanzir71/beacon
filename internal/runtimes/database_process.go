@@ -61,7 +61,7 @@ func startDatabaseRuntime(ctx context.Context, pack Pack, executable, dataDirect
 }
 
 func initializeDatabase(ctx context.Context, name, executable, dataDirectory string, output io.Writer) error {
-	marker := filepath.Join(dataDirectory, ".dropserve-initialized")
+	marker := filepath.Join(dataDirectory, ".beacon-initialized")
 	if _, err := os.Stat(marker); err == nil {
 		return nil
 	} else if !errors.Is(err, os.ErrNotExist) {
@@ -89,7 +89,7 @@ func initializeDatabase(ctx context.Context, name, executable, dataDirectory str
 	if err := command.Run(); err != nil {
 		return fmt.Errorf("initialize %s data: %w", addonTitle(name), err)
 	}
-	if err := os.WriteFile(marker, []byte("managed by Dropserve\n"), 0o600); err != nil {
+	if err := os.WriteFile(marker, []byte("managed by Beacon\n"), 0o600); err != nil {
 		return fmt.Errorf("record %s initialization: %w", addonTitle(name), err)
 	}
 	return nil

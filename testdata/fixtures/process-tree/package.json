@@ -1,5 +1,5 @@
 {
-  "name": "dropserve-process-tree-fixture",
+  "name": "beacon-process-tree-fixture",
   "private": true,
   "scripts": {
     "start": "node server.js"

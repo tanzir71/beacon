@@ -122,7 +122,7 @@ func TestTailscaleSharingCommandsAreScopedAndReversible(t *testing.T) {
 	}
 }
 
-func TestTailscaleServeStatusRecognisesOnlyDropserveRootProxy(t *testing.T) {
+func TestTailscaleServeStatusRecognisesOnlyBeaconRootProxy(t *testing.T) {
 	output := []byte(`{"Web":{"darkhorse.example-tailnet.ts.net:443":{"Handlers":{"/":{"Proxy":"http://127.0.0.1:8000"}}}}}`)
 	probes := TailscaleProbes{
 		GOOS:     "linux",

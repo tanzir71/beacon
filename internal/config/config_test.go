@@ -93,7 +93,7 @@ pin_to_root = "notes"
 
 [discovery]
 mdns = false
-mdns_name = "my-dropserve"
+mdns_name = "my-beacon"
 tailscale = false
 
 [security]
@@ -118,7 +118,7 @@ check = false
 	if configuration.Dashboard.Title != "My Apps" || configuration.Dashboard.Theme != "dark" || configuration.Dashboard.PinToRoot != "notes" {
 		t.Fatalf("dashboard config = %#v", configuration.Dashboard)
 	}
-	if configuration.Discovery.MDNS || configuration.Discovery.Tailscale || configuration.Discovery.MDNSName != "my-dropserve" {
+	if configuration.Discovery.MDNS || configuration.Discovery.Tailscale || configuration.Discovery.MDNSName != "my-beacon" {
 		t.Fatalf("discovery config = %#v", configuration.Discovery)
 	}
 	if !configuration.Security.PINEnabled || configuration.Runtimes.LazyStart != "always" || configuration.Updates.Check {

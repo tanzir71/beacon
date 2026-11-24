@@ -30,7 +30,7 @@ $personalPath = "Cert:\CurrentUser\My\$thumbprint"
 $rootPath = "Cert:\LocalMachine\Root\$thumbprint"
 $removePersonal = !(Test-Path -LiteralPath $personalPath)
 $removeRoot = !$SkipTrustVerification -and !(Test-Path -LiteralPath $rootPath)
-$publicCertificate = Join-Path ([System.IO.Path]::GetTempPath()) ("dropserve-signing-$thumbprint.cer")
+$publicCertificate = Join-Path ([System.IO.Path]::GetTempPath()) ("beacon-signing-$thumbprint.cer")
 
 try {
     if ($removePersonal) {

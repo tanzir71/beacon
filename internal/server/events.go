@@ -22,7 +22,7 @@ func newEventHub() *eventHub {
 func (hub *eventHub) serveHTTP(response http.ResponseWriter, request *http.Request) {
 	if request.Method != http.MethodGet {
 		response.Header().Set("Allow", http.MethodGet)
-		http.Error(response, "Use GET to open the Dropserve event stream.", http.StatusMethodNotAllowed)
+		http.Error(response, "Use GET to open the Beacon event stream.", http.StatusMethodNotAllowed)
 		return
 	}
 	flusher, supported := response.(http.Flusher)
@@ -31,12 +31,12 @@ func (hub *eventHub) serveHTTP(response http.ResponseWriter, request *http.Reque
 		return
 	}
 	if err := http.NewResponseController(response).SetWriteDeadline(time.Time{}); err != nil && !errors.Is(err, http.ErrNotSupported) {
-		http.Error(response, "Dropserve could not prepare the live dashboard stream.", http.StatusInternalServerError)
+		http.Error(response, "Beacon could not prepare the live dashboard stream.", http.StatusInternalServerError)
 		return
 	}
 	client, registered := hub.register()
 	if !registered {
-		http.Error(response, "Dropserve has reached its live-dashboard connection limit.", http.StatusServiceUnavailable)
+		http.Error(response, "Beacon has reached its live-dashboard connection limit.", http.StatusServiceUnavailable)
 		return
 	}
 	defer hub.unregister(client)

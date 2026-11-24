@@ -1,6 +1,6 @@
 //go:build darwin
 
-// Package autostart manages Dropserve's per-user launch agent.
+// Package autostart manages Beacon's per-user launch agent.
 package autostart
 
 import (
@@ -17,7 +17,7 @@ import (
 
 const launchAgentFileName = launchAgentLabel + ".plist"
 
-// Enable writes, loads, and starts the current user's Dropserve LaunchAgent.
+// Enable writes, loads, and starts the current user's Beacon LaunchAgent.
 func Enable(executable string) error {
 	path, err := launchAgentPath()
 	if err != nil {
@@ -43,7 +43,7 @@ func Enable(executable string) error {
 	return verifyEnabled("launch agent", Enabled)
 }
 
-// Disable unloads and removes the current user's Dropserve LaunchAgent.
+// Disable unloads and removes the current user's Beacon LaunchAgent.
 func Disable() error {
 	path, err := launchAgentPath()
 	if err != nil {
@@ -62,7 +62,7 @@ func Disable() error {
 	return nil
 }
 
-// Enabled asks launchd whether the current user's Dropserve agent is loaded.
+// Enabled asks launchd whether the current user's Beacon agent is loaded.
 func Enabled() (bool, error) {
 	target := launchAgentDomain() + "/" + launchAgentLabel
 	output, err := runLaunchctl("print", target)
@@ -93,7 +93,7 @@ func writeLaunchAgent(path string, data []byte) error {
 	if err := os.MkdirAll(directory, 0o750); err != nil {
 		return fmt.Errorf("create LaunchAgents directory: %w", err)
 	}
-	temporary, err := os.CreateTemp(directory, ".dropserve-agent-*.plist")
+	temporary, err := os.CreateTemp(directory, ".beacon-agent-*.plist")
 	if err != nil {
 		return fmt.Errorf("create temporary launch agent: %w", err)
 	}

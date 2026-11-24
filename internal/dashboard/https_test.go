@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/tanzir71/dropserve/internal/discovery"
+	"github.com/tanzir71/beacon/internal/discovery"
 )
 
 func TestTrustStoreRequiresExplicitConsent(t *testing.T) {
@@ -36,7 +36,7 @@ func TestTrustStoreRequiresExplicitConsent(t *testing.T) {
 	}
 	dashboard := httpHandler.(*handler)
 	statusResponse := httptest.NewRecorder()
-	dashboard.ServeHTTP(statusResponse, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/_dropserve/api/status", nil))
+	dashboard.ServeHTTP(statusResponse, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/_beacon/api/status", nil))
 	if len(httpsTransitions) != 0 || len(trustTransitions) != 0 {
 		t.Fatalf("status/startup changed HTTPS or trust: https=%v trust=%v", httpsTransitions, trustTransitions)
 	}
@@ -45,17 +45,17 @@ func TestTrustStoreRequiresExplicitConsent(t *testing.T) {
 	dashboard.ServeHTTP(unauthorised, httptest.NewRequestWithContext(
 		context.Background(),
 		http.MethodPost,
-		"/_dropserve/api/trust",
+		"/_beacon/api/trust",
 		strings.NewReader(`{"installed":true}`),
 	))
 	if unauthorised.Code != http.StatusForbidden || len(trustTransitions) != 0 {
 		t.Fatalf("unauthorised trust response = %d, calls=%v; want 403 and none", unauthorised.Code, trustTransitions)
 	}
 
-	postHTTPSControl(t, dashboard, "/_dropserve/api/https", `{"enabled":true}`)
-	postHTTPSControl(t, dashboard, "/_dropserve/api/trust", `{"installed":true}`)
-	postHTTPSControl(t, dashboard, "/_dropserve/api/trust", `{"installed":false}`)
-	postHTTPSControl(t, dashboard, "/_dropserve/api/https", `{"enabled":false}`)
+	postHTTPSControl(t, dashboard, "/_beacon/api/https", `{"enabled":true}`)
+	postHTTPSControl(t, dashboard, "/_beacon/api/trust", `{"installed":true}`)
+	postHTTPSControl(t, dashboard, "/_beacon/api/trust", `{"installed":false}`)
+	postHTTPSControl(t, dashboard, "/_beacon/api/https", `{"enabled":false}`)
 	if len(httpsTransitions) != 2 || !httpsTransitions[0] || httpsTransitions[1] {
 		t.Fatalf("HTTPS transitions = %v, want enable then disable", httpsTransitions)
 	}
@@ -64,13 +64,13 @@ func TestTrustStoreRequiresExplicitConsent(t *testing.T) {
 	}
 
 	rootResponse := httptest.NewRecorder()
-	dashboard.ServeHTTP(rootResponse, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/_dropserve/api/https/root.pem", nil))
+	dashboard.ServeHTTP(rootResponse, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/_beacon/api/https/root.pem", nil))
 	if rootResponse.Code != http.StatusOK || rootResponse.Body.String() != "root certificate" {
 		t.Fatalf("root download = %d %q", rootResponse.Code, rootResponse.Body.String())
 	}
 
 	finalStatus := httptest.NewRecorder()
-	dashboard.ServeHTTP(finalStatus, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/_dropserve/api/status", nil))
+	dashboard.ServeHTTP(finalStatus, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/_beacon/api/status", nil))
 	var payload struct {
 		HTTPS LocalHTTPSStatus `json:"https"`
 	}
@@ -97,7 +97,7 @@ func TestEnabledLocalHTTPSIsAdvertisedAlongsideHTTP(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create dashboard: %v", err)
 	}
-	request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/_dropserve/api/urls", nil)
+	request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/_beacon/api/urls", nil)
 	request.Host = "192.168.68.110:8000"
 	response := httptest.NewRecorder()
 	httpHandler.ServeHTTP(response, request)
@@ -120,7 +120,7 @@ func TestEnabledLocalHTTPSIsAdvertisedAlongsideHTTP(t *testing.T) {
 		t.Fatalf("advertised URLs = %#v; missing %#v", urls, want)
 	}
 	statusResponse := httptest.NewRecorder()
-	httpHandler.ServeHTTP(statusResponse, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/_dropserve/api/status", nil))
+	httpHandler.ServeHTTP(statusResponse, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/_beacon/api/status", nil))
 	var status struct {
 		Ports struct {
 			HTTP  int `json:"http"`

@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	phpfastcgi "github.com/tanzir71/dropserve/internal/php"
+	phpfastcgi "github.com/tanzir71/beacon/internal/php"
 )
 
 // PHPRuntime is the app-facing portion of a supervised php-cgi pool.
@@ -42,7 +42,7 @@ type AddonStatus struct {
 	Message     string
 }
 
-// ManagerOptions configures optional runtimes below Dropserve's state directory.
+// ManagerOptions configures optional runtimes below Beacon's state directory.
 type ManagerOptions struct {
 	Context         context.Context
 	StateDirectory  string
@@ -130,7 +130,7 @@ func NewManager(options ManagerOptions) (*Manager, error) {
 			manager.messages[pack.Name] = inspectErr.Error()
 		case installed:
 			if startErr := manager.start(pack); startErr != nil {
-				manager.messages[pack.Name] = "Dropserve could not start PHP: " + startErr.Error()
+				manager.messages[pack.Name] = "Beacon could not start PHP: " + startErr.Error()
 			}
 		}
 	}
@@ -446,12 +446,12 @@ func addonTitle(name string) string {
 func addonDescription(name string) string {
 	switch name {
 	case "php":
-		return "Adds the PHP files Dropserve needs to run PHP apps."
+		return "Adds the PHP files Beacon needs to run PHP apps."
 	case "mariadb":
-		return "Optional local MariaDB server with data stored by Dropserve."
+		return "Optional local MariaDB server with data stored by Beacon."
 	case "postgres":
-		return "Optional local PostgreSQL server with data stored by Dropserve."
+		return "Optional local PostgreSQL server with data stored by Beacon."
 	default:
-		return "Optional files Dropserve needs to run this kind of app."
+		return "Optional files Beacon needs to run this kind of app."
 	}
 }

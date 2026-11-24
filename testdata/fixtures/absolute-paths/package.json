@@ -1,5 +1,5 @@
 {
-  "name": "dropserve-absolute-paths-fixture",
+  "name": "beacon-absolute-paths-fixture",
   "private": true,
   "scripts": {
     "start": "node server.js"

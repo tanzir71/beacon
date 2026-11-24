@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/tanzir71/dropserve/internal/tlsca"
+	"github.com/tanzir71/beacon/internal/tlsca"
 )
 
 func TestLANChangeReissuesLeafWithinOneMonitorInterval(t *testing.T) {

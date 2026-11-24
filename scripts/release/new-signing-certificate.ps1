@@ -17,8 +17,8 @@ if (Test-Path -LiteralPath $pfxPath) {
 
 $certificate = New-SelfSignedCertificate `
     -Type CodeSigningCert `
-    -Subject 'CN=Dropserve Open Source Project' `
-    -FriendlyName 'Dropserve self-signed release signing' `
+    -Subject 'CN=Beacon Open Source Project' `
+    -FriendlyName 'Beacon self-signed release signing' `
     -CertStoreLocation Cert:\CurrentUser\My `
     -KeyAlgorithm RSA `
     -KeyLength 3072 `

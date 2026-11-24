@@ -15,7 +15,7 @@ type TailscaleStatus struct {
 	ServeEnabled bool
 }
 
-// ParseTailscaleStatus extracts only the local node fields Dropserve needs.
+// ParseTailscaleStatus extracts only the local node fields Beacon needs.
 func ParseTailscaleStatus(data []byte) (TailscaleStatus, error) {
 	var payload struct {
 		BackendState string `json:"BackendState"`
@@ -44,9 +44,9 @@ func ParseTailscaleStatus(data []byte) (TailscaleStatus, error) {
 			status.Message = "Tailscale is running but has no reachable address yet."
 		}
 	case "stopped":
-		status.Message = "Tailscale is stopped. Start it to reach Dropserve through your tailnet."
+		status.Message = "Tailscale is stopped. Start it to reach Beacon through your tailnet."
 	case "needslogin":
-		status.Message = "Sign in to Tailscale to reach Dropserve through your tailnet."
+		status.Message = "Sign in to Tailscale to reach Beacon through your tailnet."
 	default:
 		status.Message = "Tailscale is not ready yet."
 	}

@@ -50,17 +50,17 @@ func TestReleaseWorkflowSignsEveryArtifactKeylessly(t *testing.T) {
 	}
 }
 
-func TestWindowsUninstallerRemovesOnlyDropserveOwnedData(t *testing.T) {
+func TestWindowsUninstallerRemovesOnlyBeaconOwnedData(t *testing.T) {
 	t.Parallel()
-	installer, err := os.ReadFile("../packaging/windows/dropserve.iss") // #nosec G304 -- fixed checked-in installer definition.
+	installer, err := os.ReadFile("../packaging/windows/beacon.iss") // #nosec G304 -- fixed checked-in installer definition.
 	if err != nil {
 		t.Fatalf("read Windows installer definition: %v", err)
 	}
 	text := string(installer)
 	for _, marker := range []string{
 		"[UninstallDelete]",
-		`Type: filesandordirs; Name: "{localappdata}\Dropserve"`,
-		`Type: filesandordirs; Name: "{userappdata}\Dropserve"`,
+		`Type: filesandordirs; Name: "{localappdata}\Beacon"`,
+		`Type: filesandordirs; Name: "{userappdata}\Beacon"`,
 	} {
 		if !strings.Contains(text, marker) {
 			t.Errorf("Windows uninstaller is missing %q", marker)
@@ -91,7 +91,7 @@ func TestWindowsUninstallerRemovesOnlyDropserveOwnedData(t *testing.T) {
 		"ownedLocalDataDirectory",
 		"ownedRoamingDataDirectory",
 		"installer smoke requires a clean runner",
-		"uninstaller left Dropserve-owned data",
+		"uninstaller left Beacon-owned data",
 		"uninstaller removed the user's Apps folder or its contents",
 	} {
 		if !strings.Contains(smokeText, marker) {

@@ -79,7 +79,7 @@ func (writer *phpResponseWriter) finish() {
 	}
 	if status < http.StatusInternalServerError && isFatalPHP(writer.body.Bytes()) {
 		status = http.StatusInternalServerError
-		writer.header.Set("X-Dropserve-PHP-Error", "fatal")
+		writer.header.Set("X-Beacon-PHP-Error", "fatal")
 	}
 	writer.publish(status)
 }

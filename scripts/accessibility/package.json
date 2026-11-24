@@ -1,5 +1,5 @@
 {
-  "name": "dropserve-accessibility",
+  "name": "beacon-accessibility",
   "private": true,
   "version": "1.0.0",
   "description": "Rendered M11 dashboard accessibility acceptance checks",

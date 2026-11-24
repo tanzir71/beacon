@@ -54,7 +54,7 @@ type Manager struct {
 func NewManager(options ManagerOptions) *Manager {
 	hostname := strings.TrimSpace(options.MDNSHostname)
 	if hostname == "" {
-		hostname = "dropserve"
+		hostname = "beacon"
 	}
 	if !strings.HasSuffix(strings.ToLower(hostname), ".local") && !strings.HasSuffix(strings.ToLower(hostname), ".local.") {
 		hostname += ".local"
@@ -201,7 +201,7 @@ func (manager *Manager) SetTailscaleEnabled(enabled bool) {
 func (manager *Manager) ConfigureMDNS(enabled bool, hostname string) {
 	hostname = strings.TrimSpace(hostname)
 	if hostname == "" {
-		hostname = "dropserve"
+		hostname = "beacon"
 	}
 	if !strings.HasSuffix(strings.ToLower(hostname), ".local") {
 		hostname += ".local"
@@ -264,7 +264,7 @@ func (manager *Manager) Close() {
 
 func registerZeroconf(registration MDNSRegistration) (MDNSResponder, error) {
 	return zeroconf.RegisterProxy(
-		"Dropserve",
+		"Beacon",
 		"_http._tcp",
 		"local.",
 		registration.Port,

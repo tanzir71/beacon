@@ -26,14 +26,14 @@ func (client *recordingClient) Do(request *http.Request) (*http.Response, error)
 func TestCheckUsesOnlyLatestReleaseAPIAndReturnsLink(t *testing.T) {
 	client := &recordingClient{body: `{
   "tag_name":"v1.4.0",
-  "html_url":"https://github.com/tanzir71/dropserve/releases/tag/v1.4.0",
-  "assets":[{"browser_download_url":"https://objects.example/dropserve.exe"}]
+  "html_url":"https://github.com/tanzir71/beacon/releases/tag/v1.4.0",
+  "assets":[{"browser_download_url":"https://objects.example/beacon.exe"}]
 }`}
 	notice, err := Check(context.Background(), Options{Client: client, CurrentVersion: "1.3.9"})
 	if err != nil {
 		t.Fatalf("check latest release: %v", err)
 	}
-	if !notice.Available || notice.Version != "1.4.0" || notice.URL != "https://github.com/tanzir71/dropserve/releases/tag/v1.4.0" {
+	if !notice.Available || notice.Version != "1.4.0" || notice.URL != "https://github.com/tanzir71/beacon/releases/tag/v1.4.0" {
 		t.Fatalf("update notice = %#v", notice)
 	}
 	if len(client.requests) != 1 {
@@ -63,7 +63,7 @@ func TestCheckUsesSemanticVersionOrdering(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			client := &recordingClient{body: `{"tag_name":"` + test.latest + `","html_url":"https://github.com/tanzir71/dropserve/releases/tag/` + test.latest + `"}`}
+			client := &recordingClient{body: `{"tag_name":"` + test.latest + `","html_url":"https://github.com/tanzir71/beacon/releases/tag/` + test.latest + `"}`}
 			notice, err := Check(context.Background(), Options{Client: client, CurrentVersion: test.current})
 			if err != nil {
 				t.Fatalf("check versions: %v", err)
@@ -77,10 +77,10 @@ func TestCheckUsesSemanticVersionOrdering(t *testing.T) {
 
 func TestCheckRejectsNonReleaseLinks(t *testing.T) {
 	for _, releaseURL := range []string{
-		"http://github.com/tanzir71/dropserve/releases/tag/v1.4.0",
-		"https://example.com/tanzir71/dropserve/releases/tag/v1.4.0",
-		"https://github.com/tanzir71/dropserve/releases/download/v1.4.0/dropserve.exe",
-		"https://github.com/tanzir71/dropserve/releases/tag/v1.4.0/asset",
+		"http://github.com/tanzir71/beacon/releases/tag/v1.4.0",
+		"https://example.com/tanzir71/beacon/releases/tag/v1.4.0",
+		"https://github.com/tanzir71/beacon/releases/download/v1.4.0/beacon.exe",
+		"https://github.com/tanzir71/beacon/releases/tag/v1.4.0/asset",
 	} {
 		client := &recordingClient{body: `{"tag_name":"v1.4.0","html_url":"` + releaseURL + `"}`}
 		if _, err := Check(context.Background(), Options{Client: client, CurrentVersion: "1.3.9"}); err == nil {

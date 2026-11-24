@@ -6,14 +6,14 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $installerPath = (Resolve-Path -LiteralPath $Installer).Path
-$sandbox = Join-Path ([System.IO.Path]::GetTempPath()) ("dropserve-installer-smoke-" + [Guid]::NewGuid().ToString('N'))
+$sandbox = Join-Path ([System.IO.Path]::GetTempPath()) ("beacon-installer-smoke-" + [Guid]::NewGuid().ToString('N'))
 $installDirectory = Join-Path $sandbox 'installed'
 $appsDirectory = Join-Path $sandbox 'Apps'
 $statePath = Join-Path $sandbox 'state\state.json'
 $server = $null
-$ownedLocalDataDirectory = Join-Path $env:LOCALAPPDATA 'Dropserve'
-$ownedRoamingDataDirectory = Join-Path $env:APPDATA 'Dropserve'
-$defaultAppsContainer = Join-Path $env:USERPROFILE 'Dropserve'
+$ownedLocalDataDirectory = Join-Path $env:LOCALAPPDATA 'Beacon'
+$ownedRoamingDataDirectory = Join-Path $env:APPDATA 'Beacon'
+$defaultAppsContainer = Join-Path $env:USERPROFILE 'Beacon'
 $defaultAppsDirectory = Join-Path $defaultAppsContainer 'Apps'
 $preservedAppMarker = Join-Path $defaultAppsDirectory 'uninstall-preservation-proof.txt'
 $ownedDataPrepared = $false
@@ -27,7 +27,7 @@ foreach ($path in @($ownedLocalDataDirectory, $ownedRoamingDataDirectory, $defau
 
 New-Item -ItemType Directory -Force -Path $appsDirectory | Out-Null
 New-Item -ItemType Directory -Force -Path (Join-Path $appsDirectory 'hello') | Out-Null
-Set-Content -LiteralPath (Join-Path $appsDirectory 'hello\index.html') -Value '<h1>installed Dropserve</h1>' -Encoding utf8NoBOM
+Set-Content -LiteralPath (Join-Path $appsDirectory 'hello\index.html') -Value '<h1>installed Beacon</h1>' -Encoding utf8NoBOM
 
 try {
     $installArguments = @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', "/DIR=$installDirectory")
@@ -39,16 +39,16 @@ try {
         throw "silent installer exited $($install.ExitCode)"
     }
 
-    $desktopBinary = Join-Path $installDirectory 'dropserve.exe'
-    $cliBinary = Join-Path $installDirectory 'dropserve-cli.exe'
+    $desktopBinary = Join-Path $installDirectory 'beacon.exe'
+    $cliBinary = Join-Path $installDirectory 'beacon-cli.exe'
     if (!(Test-Path -LiteralPath $desktopBinary -PathType Leaf) -or !(Test-Path -LiteralPath $cliBinary -PathType Leaf)) {
-        throw 'installer did not place both Dropserve binaries'
+        throw 'installer did not place both Beacon binaries'
     }
 
     if (!$CurrentUser) {
-        $firewall = & netsh.exe advfirewall firewall show rule name=Dropserve verbose 2>&1 | Out-String
+        $firewall = & netsh.exe advfirewall firewall show rule name=Beacon verbose 2>&1 | Out-String
         if ($LASTEXITCODE -ne 0 -or $firewall -notmatch [regex]::Escape($desktopBinary)) {
-            throw "installer did not create the exact Dropserve firewall rule: $firewall"
+            throw "installer did not create the exact Beacon firewall rule: $firewall"
         }
     }
 
@@ -71,17 +71,17 @@ try {
     }
     if (!$healthy) {
         $stderrText = if (Test-Path -LiteralPath $stderrPath) { Get-Content -LiteralPath $stderrPath -Raw } else { '' }
-        throw "installed dropserve healthz failed: $healthOutput; stderr=$stderrText"
+        throw "installed beacon healthz failed: $healthOutput; stderr=$stderrText"
     }
 
     $autostart = Start-Process -FilePath $cliBinary -ArgumentList @('autostart', 'enable') -Wait -PassThru -WindowStyle Hidden
     if ($autostart.ExitCode -ne 0) {
-        throw "installed Dropserve could not create its autostart task: $($autostart.ExitCode)"
+        throw "installed Beacon could not create its autostart task: $($autostart.ExitCode)"
     }
 
     New-Item -ItemType Directory -Force -Path $ownedLocalDataDirectory,$ownedRoamingDataDirectory | Out-Null
-    Set-Content -LiteralPath (Join-Path $ownedLocalDataDirectory 'uninstall-proof.txt') -Value 'Dropserve-owned local data' -Encoding utf8NoBOM
-    Set-Content -LiteralPath (Join-Path $ownedRoamingDataDirectory 'uninstall-proof.txt') -Value 'Dropserve-owned configuration data' -Encoding utf8NoBOM
+    Set-Content -LiteralPath (Join-Path $ownedLocalDataDirectory 'uninstall-proof.txt') -Value 'Beacon-owned local data' -Encoding utf8NoBOM
+    Set-Content -LiteralPath (Join-Path $ownedRoamingDataDirectory 'uninstall-proof.txt') -Value 'Beacon-owned configuration data' -Encoding utf8NoBOM
     $ownedDataPrepared = $true
 
     New-Item -ItemType Directory -Force -Path $defaultAppsDirectory | Out-Null
@@ -97,7 +97,7 @@ try {
         throw "silent uninstaller exited $($uninstall.ExitCode)"
     }
     if (!$server.WaitForExit(10000)) {
-        throw 'uninstaller did not stop the running Dropserve process'
+        throw 'uninstaller did not stop the running Beacon process'
     }
     $server = $null
 
@@ -109,17 +109,17 @@ try {
         $leftovers = Get-ChildItem -LiteralPath $installDirectory -Force -Recurse | ForEach-Object { $_.FullName.Substring($installDirectory.Length).TrimStart('\') }
         throw "uninstaller left the install directory: $installDirectory; contents=$($leftovers -join ', ')"
     }
-    & schtasks.exe /Query /TN Dropserve *> $null
+    & schtasks.exe /Query /TN Beacon *> $null
     if ($LASTEXITCODE -eq 0) {
-        throw 'uninstaller left the Dropserve Scheduled Task'
+        throw 'uninstaller left the Beacon Scheduled Task'
     }
-    $firewallAfter = & netsh.exe advfirewall firewall show rule name=Dropserve 2>&1 | Out-String
-    if ($firewallAfter -match 'Rule Name:\s+Dropserve') {
-        throw "uninstaller left the Dropserve firewall rule: $firewallAfter"
+    $firewallAfter = & netsh.exe advfirewall firewall show rule name=Beacon 2>&1 | Out-String
+    if ($firewallAfter -match 'Rule Name:\s+Beacon') {
+        throw "uninstaller left the Beacon firewall rule: $firewallAfter"
     }
     foreach ($path in @($ownedLocalDataDirectory, $ownedRoamingDataDirectory)) {
         if (Test-Path -LiteralPath $path) {
-            throw "uninstaller left Dropserve-owned data: $path"
+            throw "uninstaller left Beacon-owned data: $path"
         }
     }
     if (!(Test-Path -LiteralPath $preservedAppMarker -PathType Leaf)) {

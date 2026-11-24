@@ -1,9 +1,9 @@
 param(
-    [string]$Repository = 'tanzir71/dropserve'
+    [string]$Repository = 'tanzir71/beacon'
 )
 
 $ErrorActionPreference = 'Stop'
-$pfx = Join-Path ([System.IO.Path]::GetTempPath()) ("dropserve-release-signing-" + [Guid]::NewGuid().ToString('N') + '.pfx')
+$pfx = Join-Path ([System.IO.Path]::GetTempPath()) ("beacon-release-signing-" + [Guid]::NewGuid().ToString('N') + '.pfx')
 $password = [Convert]::ToBase64String([System.Security.Cryptography.RandomNumberGenerator]::GetBytes(48))
 $thumbprint = ''
 

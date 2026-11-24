@@ -11,8 +11,8 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/tanzir71/dropserve/internal/scanner"
-	dropserver "github.com/tanzir71/dropserve/internal/server"
+	"github.com/tanzir71/beacon/internal/scanner"
+	beaconr "github.com/tanzir71/beacon/internal/server"
 )
 
 func TestAbsolutePathsFixturePrefersAndServesOwnPort(t *testing.T) {
@@ -28,7 +28,7 @@ func TestAbsolutePathsFixturePrefersAndServesOwnPort(t *testing.T) {
 	if err != nil {
 		t.Fatalf("resolve absolute-paths fixture: %v", err)
 	}
-	server, err := dropserver.New(scanner.Options{Registered: []string{fixture}})
+	server, err := beaconr.New(scanner.Options{Registered: []string{fixture}})
 	if err != nil {
 		t.Fatalf("create absolute-paths server: %v", err)
 	}
@@ -43,7 +43,7 @@ func TestAbsolutePathsFixturePrefersAndServesOwnPort(t *testing.T) {
 	detailRequest, err := http.NewRequestWithContext(
 		context.Background(),
 		http.MethodGet,
-		httpServer.URL+"/_dropserve/api/apps/absolute-paths",
+		httpServer.URL+"/_beacon/api/apps/absolute-paths",
 		nil,
 	)
 	if err != nil {
@@ -93,7 +93,7 @@ func TestAbsolutePathsFixturePrefersAndServesOwnPort(t *testing.T) {
 	}
 }
 
-func TestAssignedCommandPortPersistsAcrossDropserveRestart(t *testing.T) {
+func TestAssignedCommandPortPersistsAcrossBeaconRestart(t *testing.T) {
 	if _, err := exec.LookPath("node"); err != nil {
 		t.Skip("node is not installed; CI installs Node so this acceptance test runs there")
 	}
@@ -104,11 +104,11 @@ func TestAssignedCommandPortPersistsAcrossDropserveRestart(t *testing.T) {
 	if err != nil {
 		t.Fatalf("resolve Node fixture: %v", err)
 	}
-	options := dropserver.Options{
+	options := beaconr.Options{
 		Scanner:   scanner.Options{Registered: []string{fixture}},
 		IndexPath: filepath.Join(t.TempDir(), "index.json"),
 	}
-	first, err := dropserver.NewWithOptions(options)
+	first, err := beaconr.NewWithOptions(options)
 	if err != nil {
 		t.Fatalf("start first persistent-port server: %v", err)
 	}
@@ -122,7 +122,7 @@ func TestAssignedCommandPortPersistsAcrossDropserveRestart(t *testing.T) {
 		t.Fatalf("close first persistent-port server: %v", err)
 	}
 
-	second, err := dropserver.NewWithOptions(options)
+	second, err := beaconr.NewWithOptions(options)
 	if err != nil {
 		t.Fatalf("start second persistent-port server: %v", err)
 	}
@@ -140,7 +140,7 @@ func TestAssignedCommandPortPersistsAcrossDropserveRestart(t *testing.T) {
 		&http.Client{},
 		"http://127.0.0.1:"+strconv.Itoa(firstPort)+"/",
 	)
-	if status != http.StatusOK || body != "Dropserve Node fixture" {
+	if status != http.StatusOK || body != "Beacon Node fixture" {
 		t.Fatalf("persisted own-port response = %d %q", status, body)
 	}
 }

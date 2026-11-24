@@ -8,12 +8,12 @@ import (
 func TestSystemdUnitRunsInBackgroundAndRestartsOnFailure(t *testing.T) {
 	t.Parallel()
 
-	unit := string(makeSystemdUnit(`/opt/Drop Serve/dropserve%stable`))
+	unit := string(makeSystemdUnit(`/opt/Drop Serve/beacon%stable`))
 	wants := []string{
 		"[Unit]\n",
 		"After=network-online.target\n",
 		"[Service]\n",
-		`ExecStart="/opt/Drop Serve/dropserve%%stable" --background`,
+		`ExecStart="/opt/Drop Serve/beacon%%stable" --background`,
 		"Restart=on-failure\n",
 		"RestartSec=60s\n",
 		"[Install]\n",

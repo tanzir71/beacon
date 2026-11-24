@@ -1,4 +1,4 @@
-// Package state persists Dropserve's machine-managed runtime state as atomic JSON.
+// Package state persists Beacon's machine-managed runtime state as atomic JSON.
 package state
 
 import (
@@ -29,21 +29,21 @@ func DefaultPath() (string, error) {
 		if err != nil {
 			return "", fmt.Errorf("find local app-data directory: %w", err)
 		}
-		return filepath.Join(root, "Dropserve", "state.json"), nil
+		return filepath.Join(root, "Beacon", "state.json"), nil
 	}
 	if root := os.Getenv("XDG_DATA_HOME"); root != "" {
-		return filepath.Join(root, "dropserve", "state.json"), nil
+		return filepath.Join(root, "beacon", "state.json"), nil
 	}
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return "", fmt.Errorf("find home directory: %w", err)
 	}
-	return filepath.Join(home, ".local", "share", "dropserve", "state.json"), nil
+	return filepath.Join(home, ".local", "share", "beacon", "state.json"), nil
 }
 
 // Load reads a runtime snapshot, returning an empty state when absent.
 func Load(path string) (State, error) {
-	// #nosec G304 -- path is Dropserve's configured per-user state path, not request data.
+	// #nosec G304 -- path is Beacon's configured per-user state path, not request data.
 	data, err := os.ReadFile(path)
 	if errors.Is(err, os.ErrNotExist) {
 		return State{}, nil

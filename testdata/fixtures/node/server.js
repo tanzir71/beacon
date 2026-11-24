@@ -8,5 +8,5 @@ http.createServer((request, response) => {
     response.end(String(process.pid));
     return;
   }
-  response.end('Dropserve Node fixture');
+  response.end('Beacon Node fixture');
 }).listen(port, host);

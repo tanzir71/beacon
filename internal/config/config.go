@@ -1,4 +1,4 @@
-// Package config loads and saves Dropserve's human-editable TOML configuration.
+// Package config loads and saves Beacon's human-editable TOML configuration.
 package config
 
 import (
@@ -69,12 +69,12 @@ type Runtimes struct {
 func Default() Config {
 	home, _ := os.UserHomeDir()
 	return Config{
-		Dashboard: Dashboard{Title: "Dropserve", Theme: "auto"},
-		Discovery: Discovery{MDNS: true, MDNSName: "dropserve", Tailscale: true},
+		Dashboard: Dashboard{Title: "Beacon", Theme: "auto"},
+		Discovery: Discovery{MDNS: true, MDNSName: "beacon", Tailscale: true},
 		Runtimes:  Runtimes{PHPVersion: "8.3", LazyStart: "auto"},
 		Updates:   Updates{Check: true},
 		Server: Server{
-			AppsRoots:    []string{filepath.Join(home, "Dropserve", "Apps")},
+			AppsRoots:    []string{filepath.Join(home, "Beacon", "Apps")},
 			Bind:         "0.0.0.0",
 			AppPortRange: []int{7400, 7999},
 		},
@@ -87,13 +87,13 @@ func DefaultPath() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("find user config directory: %w", err)
 	}
-	return filepath.Join(root, "Dropserve", "config.toml"), nil
+	return filepath.Join(root, "Beacon", "config.toml"), nil
 }
 
 // Load reads path, returning defaults when it does not exist.
 func Load(path string) (Config, error) {
 	configuration := Default()
-	// #nosec G304 -- path is Dropserve's configured per-user config path, not request data.
+	// #nosec G304 -- path is Beacon's configured per-user config path, not request data.
 	data, err := os.ReadFile(path)
 	if errors.Is(err, os.ErrNotExist) {
 		return configuration, nil
@@ -135,7 +135,7 @@ func Validate(configuration Config) error {
 		return fmt.Errorf("dashboard.pin_to_root must be a lowercase app slug")
 	}
 	if !validMDNSName(configuration.Discovery.MDNSName) {
-		return fmt.Errorf("discovery.mdns_name must be one DNS label such as dropserve")
+		return fmt.Errorf("discovery.mdns_name must be one DNS label such as beacon")
 	}
 	if configuration.Security.PINEnabled {
 		decoded, err := hex.DecodeString(configuration.Security.PINHash)
@@ -149,7 +149,7 @@ func Validate(configuration Config) error {
 		return fmt.Errorf("runtimes.lazy_start must be auto, always, or never")
 	}
 	if strings.TrimSpace(configuration.Runtimes.PHPVersion) != "8.3" {
-		return fmt.Errorf("runtimes.php_version must be 8.3 in Dropserve v1")
+		return fmt.Errorf("runtimes.php_version must be 8.3 in Beacon v1")
 	}
 	return nil
 }

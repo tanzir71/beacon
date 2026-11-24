@@ -51,6 +51,6 @@ func TestTrustStatusReadsTheSystemWithoutInstalling(t *testing.T) {
 		t.Fatalf("read system trust: %v", err)
 	}
 	if installed {
-		t.Fatal("fresh isolated Dropserve root unexpectedly appears in system trust")
+		t.Fatal("fresh isolated Beacon root unexpectedly appears in system trust")
 	}
 }

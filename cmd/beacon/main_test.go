@@ -21,15 +21,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/tanzir71/dropserve/internal/config"
-	"github.com/tanzir71/dropserve/internal/dashboard"
-	"github.com/tanzir71/dropserve/internal/doctor"
-	"github.com/tanzir71/dropserve/internal/firstrun"
-	"github.com/tanzir71/dropserve/internal/router"
-	"github.com/tanzir71/dropserve/internal/scanner"
-	"github.com/tanzir71/dropserve/internal/state"
-	staticserver "github.com/tanzir71/dropserve/internal/static"
-	"github.com/tanzir71/dropserve/internal/updatecheck"
+	"github.com/tanzir71/beacon/internal/config"
+	"github.com/tanzir71/beacon/internal/dashboard"
+	"github.com/tanzir71/beacon/internal/doctor"
+	"github.com/tanzir71/beacon/internal/firstrun"
+	"github.com/tanzir71/beacon/internal/router"
+	"github.com/tanzir71/beacon/internal/scanner"
+	"github.com/tanzir71/beacon/internal/state"
+	staticserver "github.com/tanzir71/beacon/internal/static"
+	"github.com/tanzir71/beacon/internal/updatecheck"
 )
 
 type lockedBuffer struct {
@@ -65,7 +65,7 @@ func TestUpdateMonitorCanBeEnabledByAHotConfigReload(t *testing.T) {
 			trigger,
 			func(_ context.Context, options updatecheck.Options) (updatecheck.Notification, error) {
 				checkerCalls <- options
-				return updatecheck.Notification{Available: true, Version: "1.1.0", URL: "https://github.com/tanzir71/dropserve/releases/tag/v1.1.0"}, nil
+				return updatecheck.Notification{Available: true, Version: "1.1.0", URL: "https://github.com/tanzir71/beacon/releases/tag/v1.1.0"}, nil
 			},
 		)
 	}()
@@ -306,7 +306,7 @@ func TestServeWithNoPacksKeepsBaseBinaryOperational(t *testing.T) {
 	}
 	assertBody("/static/", "pack-free static")
 	assertBody("/php/", "Install the optional PHP pack")
-	addOnsRequest, err := http.NewRequestWithContext(ctx, http.MethodGet, address+"/_dropserve/api/addons", nil)
+	addOnsRequest, err := http.NewRequestWithContext(ctx, http.MethodGet, address+"/_beacon/api/addons", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -340,14 +340,14 @@ func TestVersionCommand(t *testing.T) {
 	if code := run([]string{"version"}, &stdout, &stderr); code != 0 {
 		t.Fatalf("run(version) returned %d; stderr: %s", code, stderr.String())
 	}
-	if got := stdout.String(); !strings.HasPrefix(got, "dropserve ") || !strings.Contains(got, "(") {
+	if got := stdout.String(); !strings.HasPrefix(got, "beacon ") || !strings.Contains(got, "(") {
 		t.Fatalf("version output %q does not contain the product, version, and commit", got)
 	}
 }
 
 func TestHealthzCommandChecksTheRunningServer(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
-		if request.URL.Path != "/_dropserve/healthz" {
+		if request.URL.Path != "/_beacon/healthz" {
 			http.NotFound(response, request)
 			return
 		}
@@ -386,7 +386,7 @@ func TestUnknownCommandNamesTheFix(t *testing.T) {
 	if code := run([]string{"nope"}, &stdout, &stderr); code != 2 {
 		t.Fatalf("run(nope) returned %d, want 2", code)
 	}
-	if got := stderr.String(); !strings.Contains(got, "dropserve help") {
+	if got := stderr.String(); !strings.Contains(got, "beacon help") {
 		t.Fatalf("error %q does not name the recovery command", got)
 	}
 }
@@ -411,7 +411,7 @@ func TestDoctorReportsSyncRootWarning(t *testing.T) {
 		t.Fatalf("doctor returned %d; stderr=%q", code, stderr.String())
 	}
 	output := stdout.String()
-	if !strings.Contains(output, root) || !strings.Contains(output, `%USERPROFILE%\Dropserve`) {
+	if !strings.Contains(output, root) || !strings.Contains(output, `%USERPROFILE%\Beacon`) {
 		t.Fatalf("doctor output = %q, want root and recommended location", output)
 	}
 }
@@ -489,7 +489,7 @@ func TestAddRegistersPathWithoutChangingApp(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(appPath, "index.html"), index, 0o600); err != nil {
 		t.Fatalf("write external app: %v", err)
 	}
-	configDir := filepath.Join(sandbox, "dropserve-state")
+	configDir := filepath.Join(sandbox, "beacon-state")
 	if err := os.Mkdir(configDir, 0o750); err != nil {
 		t.Fatalf("create config directory: %v", err)
 	}
@@ -542,7 +542,7 @@ func TestAddRegistersPathWithoutChangingApp(t *testing.T) {
 	request := httptest.NewRequestWithContext(
 		context.Background(),
 		http.MethodGet,
-		"http://dropserve.test/invoice-tool/",
+		"http://beacon.test/invoice-tool/",
 		nil,
 	)
 	response := httptest.NewRecorder()
@@ -585,7 +585,7 @@ func TestPersistedPortIsPreferredOnRestart(t *testing.T) {
 	statePath := filepath.Join(t.TempDir(), "state.json")
 	originalWarning := state.Warning{
 		Code:    "port_fallback",
-		Message: "Dropserve selected this fallback on the first start.",
+		Message: "Beacon selected this fallback on the first start.",
 	}
 	if err := state.Save(statePath, state.State{
 		HTTPPort: preferredPort,

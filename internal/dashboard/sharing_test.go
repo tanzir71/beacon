@@ -14,8 +14,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/tanzir71/dropserve/internal/discovery"
-	"github.com/tanzir71/dropserve/internal/indexer"
+	"github.com/tanzir71/beacon/internal/discovery"
+	"github.com/tanzir71/beacon/internal/indexer"
 )
 
 func TestLoopbackOnlySharingHasNoBrokenEntries(t *testing.T) {
@@ -28,7 +28,7 @@ func TestLoopbackOnlySharingHasNoBrokenEntries(t *testing.T) {
 	server := httptest.NewServer(handler)
 	defer server.Close()
 
-	request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, server.URL+"/_dropserve/api/urls", nil)
+	request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, server.URL+"/_beacon/api/urls", nil)
 	if err != nil {
 		t.Fatalf("create sharing request: %v", err)
 	}
@@ -83,7 +83,7 @@ func TestMDNSBindFailureIsLoggedAndOmittedFromSharingURLs(t *testing.T) {
 	}
 	server := httptest.NewServer(handler)
 	defer server.Close()
-	request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, server.URL+"/_dropserve/api/urls", nil)
+	request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, server.URL+"/_beacon/api/urls", nil)
 	if err != nil {
 		t.Fatalf("create sharing request: %v", err)
 	}
@@ -132,7 +132,7 @@ func TestNoImplicitPublicExposure(t *testing.T) {
 	request := httptest.NewRequestWithContext(
 		context.Background(),
 		http.MethodPost,
-		"/_dropserve/api/sharing/funnel/field-notes",
+		"/_beacon/api/sharing/funnel/field-notes",
 		strings.NewReader(`{}`),
 	)
 	request.Header.Set("Content-Type", "application/json")
@@ -150,7 +150,7 @@ func TestNoImplicitPublicExposure(t *testing.T) {
 	explicitRequest := httptest.NewRequestWithContext(
 		context.Background(),
 		http.MethodPost,
-		"/_dropserve/api/sharing/funnel/field-notes",
+		"/_beacon/api/sharing/funnel/field-notes",
 		strings.NewReader(`{"confirmation":"field-notes"}`),
 	)
 	explicitRequest.Header.Set("Content-Type", "application/json")
@@ -194,7 +194,7 @@ func TestActiveFunnelProducesNonDismissiblePublicSharingWarning(t *testing.T) {
 	}
 	dashboard := httpHandler.(*handler)
 	response := httptest.NewRecorder()
-	dashboard.ServeHTTP(response, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/_dropserve/api/status", nil))
+	dashboard.ServeHTTP(response, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/_beacon/api/status", nil))
 	var status struct {
 		Warnings []string `json:"warnings"`
 		Sharing  struct {
@@ -245,7 +245,7 @@ func TestLANIPChangeNoticePersistsUntilDismissed(t *testing.T) {
 	}
 	dashboard := httpHandler.(*handler)
 	statusResponse := httptest.NewRecorder()
-	dashboard.ServeHTTP(statusResponse, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/_dropserve/api/status", nil))
+	dashboard.ServeHTTP(statusResponse, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/_beacon/api/status", nil))
 	var status struct {
 		Network struct {
 			Change *struct {
@@ -262,11 +262,11 @@ func TestLANIPChangeNoticePersistsUntilDismissed(t *testing.T) {
 	}
 
 	page := httptest.NewRecorder()
-	dashboard.ServeHTTP(page, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/_dropserve/help/dhcp-reservation", nil))
+	dashboard.ServeHTTP(page, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/_beacon/help/dhcp-reservation", nil))
 	if page.Code != http.StatusOK || !strings.Contains(page.Body.String(), "DHCP reservation") {
 		t.Fatalf("DHCP explainer = %d %q", page.Code, page.Body.String())
 	}
-	if !strings.Contains(string(dashboard.index), `id="address-change-warning"`) || !strings.Contains(string(dashboard.index), `href="/_dropserve/help/dhcp-reservation"`) {
+	if !strings.Contains(string(dashboard.index), `id="address-change-warning"`) || !strings.Contains(string(dashboard.index), `href="/_beacon/help/dhcp-reservation"`) {
 		t.Fatal("dashboard does not wire the persistent address-change notice to the DHCP explainer")
 	}
 
@@ -275,7 +275,7 @@ func TestLANIPChangeNoticePersistsUntilDismissed(t *testing.T) {
 	if persisted.Snapshot().LANChange == nil {
 		t.Fatal("network change notice did not survive manager reload")
 	}
-	dismissRequest := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/_dropserve/api/network-change/dismiss", nil)
+	dismissRequest := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/_beacon/api/network-change/dismiss", nil)
 	authorizeTestMutation(dismissRequest, dashboard.csrfToken)
 	dismissResponse := httptest.NewRecorder()
 	dashboard.ServeHTTP(dismissResponse, dismissRequest)
@@ -313,7 +313,7 @@ func TestTailscaleServeToggleRequiresCSRFAndPublishesHTTPS(t *testing.T) {
 	dashboard.ServeHTTP(unauthorised, httptest.NewRequestWithContext(
 		context.Background(),
 		http.MethodPost,
-		"/_dropserve/api/sharing/tailscale",
+		"/_beacon/api/sharing/tailscale",
 		strings.NewReader(`{"enabled":true}`),
 	))
 	if unauthorised.Code != http.StatusForbidden || len(transitions) != 0 {
@@ -322,7 +322,7 @@ func TestTailscaleServeToggleRequiresCSRFAndPublishesHTTPS(t *testing.T) {
 
 	toggleTailscaleServe(t, dashboard, true)
 	urlsResponse := httptest.NewRecorder()
-	request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/_dropserve/api/urls", nil)
+	request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/_beacon/api/urls", nil)
 	request.Host = "192.168.1.10:8000"
 	dashboard.ServeHTTP(urlsResponse, request)
 	var urls []advertisedURL
@@ -350,7 +350,7 @@ func toggleTailscaleServe(t *testing.T, dashboard *handler, enabled bool) {
 	request := httptest.NewRequestWithContext(
 		context.Background(),
 		http.MethodPost,
-		"/_dropserve/api/sharing/tailscale",
+		"/_beacon/api/sharing/tailscale",
 		strings.NewReader(fmt.Sprintf(`{"enabled":%t}`, enabled)),
 	)
 	request.Header.Set("Content-Type", "application/json")

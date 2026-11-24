@@ -1,4 +1,4 @@
-// Package traymenu defines Dropserve's optional system-tray presentation.
+// Package traymenu defines Beacon's optional system-tray presentation.
 package traymenu
 
 import (
@@ -37,9 +37,9 @@ func Labels() []string {
 func UpdateLabel(version string) string {
 	version = strings.TrimSpace(version)
 	if version == "" {
-		return "View latest Dropserve release"
+		return "View latest Beacon release"
 	}
-	return "View Dropserve " + version + " release"
+	return "View Beacon " + version + " release"
 }
 
 // Icon creates a small self-contained Windows ICO for state. Other tray
@@ -91,7 +91,7 @@ func Icon(state State) []byte {
 				continue
 			}
 			pixel := color
-			if dropserveGlyph(x, displayY) {
+			if beaconGlyph(x, displayY) {
 				pixel = [3]byte{0xff, 0xff, 0xff}
 			}
 			pixels[offset] = pixel[0]
@@ -107,7 +107,7 @@ func transparentCorner(x, y int) bool {
 	return (x < 2 || x > 13) && (y < 2 || y > 13)
 }
 
-func dropserveGlyph(x, y int) bool {
+func beaconGlyph(x, y int) bool {
 	if x == 5 && y >= 4 && y <= 11 {
 		return true
 	}

@@ -160,7 +160,7 @@ func (installer Installer) download(ctx context.Context, pack Pack, path string)
 	if client == nil {
 		client = http.DefaultClient
 	}
-	response, err := client.Do(request) // #nosec G107 -- URL is selected from Dropserve's pinned runtime manifest.
+	response, err := client.Do(request) // #nosec G107 -- URL is selected from Beacon's pinned runtime manifest.
 	if err != nil {
 		return nil, fmt.Errorf("download runtime pack %s: %w", pack.Name, err)
 	}

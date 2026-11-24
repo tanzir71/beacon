@@ -12,22 +12,22 @@ function Invoke-Autostart {
 
     $output = @(& $script:binaryPath autostart $Action 2>&1)
     if ($LASTEXITCODE -ne 0) {
-        throw "dropserve autostart $Action failed: $($output -join [Environment]::NewLine)"
+        throw "beacon autostart $Action failed: $($output -join [Environment]::NewLine)"
     }
     return $output -join [Environment]::NewLine
 }
 
 $repositoryRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 if ($Binary -eq "") {
-    $Binary = Join-Path $repositoryRoot "bin\dropserve-cli.exe"
+    $Binary = Join-Path $repositoryRoot "bin\beacon-cli.exe"
 }
 if ($BackgroundBinary -eq "") {
-    $BackgroundBinary = Join-Path $repositoryRoot "bin\dropserve.exe"
+    $BackgroundBinary = Join-Path $repositoryRoot "bin\beacon.exe"
 }
 $script:binaryPath = (Resolve-Path -LiteralPath $Binary).Path
 $backgroundBinaryPath = (Resolve-Path -LiteralPath $BackgroundBinary).Path
-$backupPath = Join-Path ([System.IO.Path]::GetTempPath()) ("dropserve-task-backup-" + [Guid]::NewGuid().ToString("N") + ".xml")
-$existingTask = @(& schtasks.exe /Query /TN Dropserve /XML 2>$null)
+$backupPath = Join-Path ([System.IO.Path]::GetTempPath()) ("beacon-task-backup-" + [Guid]::NewGuid().ToString("N") + ".xml")
+$existingTask = @(& schtasks.exe /Query /TN Beacon /XML 2>$null)
 $hadExistingTask = $LASTEXITCODE -eq 0
 if ($hadExistingTask) {
     [System.IO.File]::WriteAllText(
@@ -40,9 +40,9 @@ if ($hadExistingTask) {
 try {
     $null = Invoke-Autostart -Action "enable"
     $null = Invoke-Autostart -Action "enable"
-    $taskLines = @(& schtasks.exe /Query /TN Dropserve /XML 2>&1)
+    $taskLines = @(& schtasks.exe /Query /TN Beacon /XML 2>&1)
     if ($LASTEXITCODE -ne 0) {
-        throw "schtasks could not query the enabled Dropserve task: $($taskLines -join [Environment]::NewLine)"
+        throw "schtasks could not query the enabled Beacon task: $($taskLines -join [Environment]::NewLine)"
     }
     $taskXML = $taskLines -join [Environment]::NewLine
     foreach ($required in @(
@@ -71,7 +71,7 @@ try {
         throw "autostart status reported $status instead of enabled"
     }
 
-    $deleteOutput = @(& schtasks.exe /Delete /TN Dropserve /F 2>&1)
+    $deleteOutput = @(& schtasks.exe /Delete /TN Beacon /F 2>&1)
     if ($LASTEXITCODE -ne 0) {
         throw "external schtasks deletion failed: $($deleteOutput -join [Environment]::NewLine)"
     }
@@ -92,9 +92,9 @@ finally {
         Write-Warning "Could not remove the smoke task: $($cleanupOutput -join [Environment]::NewLine)"
     }
     if ($hadExistingTask) {
-        $restoreOutput = @(& schtasks.exe /Create /XML $backupPath /TN Dropserve /F 2>&1)
+        $restoreOutput = @(& schtasks.exe /Create /XML $backupPath /TN Beacon /F 2>&1)
         if ($LASTEXITCODE -ne 0) {
-            Write-Warning "Could not restore the pre-existing Dropserve task: $($restoreOutput -join [Environment]::NewLine)"
+            Write-Warning "Could not restore the pre-existing Beacon task: $($restoreOutput -join [Environment]::NewLine)"
         }
     }
     if (Test-Path -LiteralPath $backupPath) {

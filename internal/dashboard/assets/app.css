@@ -249,29 +249,29 @@ footer a { color: var(--muted); }
 }
 
 @media (prefers-color-scheme: dark) {
-  :root:not([data-dropserve-theme="light"]) { color-scheme: dark; --ink: #edf3f0; --muted: #9daba5; --line: #33413c; --paper: #111815; --card: rgba(27, 38, 34, .9); --accent: #66cea2; --accent-soft: #203e33; --focus: #9ae8c6; --shadow: 0 18px 50px rgba(0,0,0,.24); }
-  :root:not([data-dropserve-theme="light"]) body { background: radial-gradient(circle at 12% 2%, rgba(50, 125, 94, .18), transparent 31rem), var(--paper); }
-  :root:not([data-dropserve-theme="light"]) .brand-mark, :root:not([data-dropserve-theme="light"]) .empty-state button { color: #10271f; background: var(--accent); }
-  :root:not([data-dropserve-theme="light"]) .search-shell { border-color: #3b4d46; background: rgba(26, 36, 32, .95); }
-  :root:not([data-dropserve-theme="light"]) kbd { background: #1b2521; }
-  :root:not([data-dropserve-theme="light"]) .notice { color: #f1e6bd; background: #392f13; border-color: #6e5a1e; }
-  :root:not([data-dropserve-theme="light"]) .notice button, :root:not([data-dropserve-theme="light"]) .notice a { background: #211d12; }
-  :root:not([data-dropserve-theme="light"]) .public-warning { color: #ffd7d7; background: #421d1d; border-color: #9d5050; }
-  :root:not([data-dropserve-theme="light"]) .count-pill, :root:not([data-dropserve-theme="light"]) .sharing-row { background: rgba(255,255,255,.045); }
-  :root:not([data-dropserve-theme="light"]) .app-card[data-status="crashed"] { background: #352913; }
-  :root:not([data-dropserve-theme="light"]) .crash-preview { color: #efd59d; background: rgba(0,0,0,.16); }
-  :root:not([data-dropserve-theme="light"]) .app-card .own-port-note { color: #e4c06b; }
+  :root:not([data-beacon-theme="light"]) { color-scheme: dark; --ink: #edf3f0; --muted: #9daba5; --line: #33413c; --paper: #111815; --card: rgba(27, 38, 34, .9); --accent: #66cea2; --accent-soft: #203e33; --focus: #9ae8c6; --shadow: 0 18px 50px rgba(0,0,0,.24); }
+  :root:not([data-beacon-theme="light"]) body { background: radial-gradient(circle at 12% 2%, rgba(50, 125, 94, .18), transparent 31rem), var(--paper); }
+  :root:not([data-beacon-theme="light"]) .brand-mark, :root:not([data-beacon-theme="light"]) .empty-state button { color: #10271f; background: var(--accent); }
+  :root:not([data-beacon-theme="light"]) .search-shell { border-color: #3b4d46; background: rgba(26, 36, 32, .95); }
+  :root:not([data-beacon-theme="light"]) kbd { background: #1b2521; }
+  :root:not([data-beacon-theme="light"]) .notice { color: #f1e6bd; background: #392f13; border-color: #6e5a1e; }
+  :root:not([data-beacon-theme="light"]) .notice button, :root:not([data-beacon-theme="light"]) .notice a { background: #211d12; }
+  :root:not([data-beacon-theme="light"]) .public-warning { color: #ffd7d7; background: #421d1d; border-color: #9d5050; }
+  :root:not([data-beacon-theme="light"]) .count-pill, :root:not([data-beacon-theme="light"]) .sharing-row { background: rgba(255,255,255,.045); }
+  :root:not([data-beacon-theme="light"]) .app-card[data-status="crashed"] { background: #352913; }
+  :root:not([data-beacon-theme="light"]) .crash-preview { color: #efd59d; background: rgba(0,0,0,.16); }
+  :root:not([data-beacon-theme="light"]) .app-card .own-port-note { color: #e4c06b; }
 }
 
-:root[data-dropserve-theme="dark"] { color-scheme: dark; --ink: #edf3f0; --muted: #9daba5; --line: #33413c; --paper: #111815; --card: rgba(27, 38, 34, .9); --accent: #66cea2; --accent-soft: #203e33; --focus: #9ae8c6; --shadow: 0 18px 50px rgba(0,0,0,.24); }
-:root[data-dropserve-theme="dark"] body { background: radial-gradient(circle at 12% 2%, rgba(50, 125, 94, .18), transparent 31rem), var(--paper); }
-:root[data-dropserve-theme="dark"] .brand-mark, :root[data-dropserve-theme="dark"] .empty-state button { color: #10271f; background: var(--accent); }
-:root[data-dropserve-theme="dark"] .search-shell { border-color: #3b4d46; background: rgba(26, 36, 32, .95); }
-:root[data-dropserve-theme="dark"] kbd { background: #1b2521; }
-:root[data-dropserve-theme="dark"] .notice { color: #f1e6bd; background: #392f13; border-color: #6e5a1e; }
-:root[data-dropserve-theme="dark"] .notice button, :root[data-dropserve-theme="dark"] .notice a { background: #211d12; }
-:root[data-dropserve-theme="dark"] .public-warning { color: #ffd7d7; background: #421d1d; border-color: #9d5050; }
-:root[data-dropserve-theme="dark"] .count-pill, :root[data-dropserve-theme="dark"] .sharing-row { background: rgba(255,255,255,.045); }
-:root[data-dropserve-theme="dark"] .app-card[data-status="crashed"] { background: #352913; }
-:root[data-dropserve-theme="dark"] .crash-preview { color: #efd59d; background: rgba(0,0,0,.16); }
-:root[data-dropserve-theme="dark"] .app-card .own-port-note { color: #e4c06b; }
+:root[data-beacon-theme="dark"] { color-scheme: dark; --ink: #edf3f0; --muted: #9daba5; --line: #33413c; --paper: #111815; --card: rgba(27, 38, 34, .9); --accent: #66cea2; --accent-soft: #203e33; --focus: #9ae8c6; --shadow: 0 18px 50px rgba(0,0,0,.24); }
+:root[data-beacon-theme="dark"] body { background: radial-gradient(circle at 12% 2%, rgba(50, 125, 94, .18), transparent 31rem), var(--paper); }
+:root[data-beacon-theme="dark"] .brand-mark, :root[data-beacon-theme="dark"] .empty-state button { color: #10271f; background: var(--accent); }
+:root[data-beacon-theme="dark"] .search-shell { border-color: #3b4d46; background: rgba(26, 36, 32, .95); }
+:root[data-beacon-theme="dark"] kbd { background: #1b2521; }
+:root[data-beacon-theme="dark"] .notice { color: #f1e6bd; background: #392f13; border-color: #6e5a1e; }
+:root[data-beacon-theme="dark"] .notice button, :root[data-beacon-theme="dark"] .notice a { background: #211d12; }
+:root[data-beacon-theme="dark"] .public-warning { color: #ffd7d7; background: #421d1d; border-color: #9d5050; }
+:root[data-beacon-theme="dark"] .count-pill, :root[data-beacon-theme="dark"] .sharing-row { background: rgba(255,255,255,.045); }
+:root[data-beacon-theme="dark"] .app-card[data-status="crashed"] { background: #352913; }
+:root[data-beacon-theme="dark"] .crash-preview { color: #efd59d; background: rgba(0,0,0,.16); }
+:root[data-beacon-theme="dark"] .app-card .own-port-note { color: #e4c06b; }

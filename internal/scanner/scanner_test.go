@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/tanzir71/dropserve/internal/scanner"
+	"github.com/tanzir71/beacon/internal/scanner"
 )
 
 func TestSlugSanitisation(t *testing.T) {
@@ -191,7 +191,7 @@ func TestSyncRootWarningNamesAllKnownProviders(t *testing.T) {
 			}
 			combined := strings.Join(warnings, "\n")
 			if !strings.Contains(combined, root) || !strings.Contains(combined, provider) ||
-				!strings.Contains(combined, `%USERPROFILE%\Dropserve`) {
+				!strings.Contains(combined, `%USERPROFILE%\Beacon`) {
 				t.Fatalf("%s warnings = %q", provider, combined)
 			}
 		})
@@ -202,7 +202,7 @@ func TestReservedSlugsAreRefusedWithWarnings(t *testing.T) {
 	t.Parallel()
 
 	root := t.TempDir()
-	reserved := []string{"_dropserve", "api", "health", ".well-known"}
+	reserved := []string{"_beacon", "api", "health", ".well-known"}
 	for _, name := range reserved {
 		if err := os.Mkdir(filepath.Join(root, name), 0o750); err != nil {
 			t.Fatalf("create reserved fixture %q: %v", name, err)

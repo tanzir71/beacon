@@ -71,7 +71,7 @@ func TestMDNSStartsWhenLANAppearsAfterOfflineStartup(t *testing.T) {
 	if len(registrations) != 1 || len(registrations[0].Addresses) != 1 || registrations[0].Addresses[0] != address.String() {
 		t.Fatalf("mDNS registrations after LAN appeared = %#v", registrations)
 	}
-	if manager.Snapshot().MDNSHostname != "dropserve.local" {
-		t.Fatalf("mDNS hostname = %q, want dropserve.local", manager.Snapshot().MDNSHostname)
+	if manager.Snapshot().MDNSHostname != "beacon.local" {
+		t.Fatalf("mDNS hostname = %q, want beacon.local", manager.Snapshot().MDNSHostname)
 	}
 }

@@ -1,4 +1,4 @@
-// Command performance enforces Dropserve's M11 loopback performance floor.
+// Command performance enforces Beacon's M11 loopback performance floor.
 package main
 
 import (
@@ -15,8 +15,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/tanzir71/dropserve/internal/scanner"
-	dropserver "github.com/tanzir71/dropserve/internal/server"
+	"github.com/tanzir71/beacon/internal/scanner"
+	beaconr "github.com/tanzir71/beacon/internal/server"
 )
 
 const fixtureApps = 200
@@ -36,7 +36,7 @@ func main() {
 }
 
 func run() error {
-	appsRoot, err := os.MkdirTemp("", "dropserve-performance-")
+	appsRoot, err := os.MkdirTemp("", "beacon-performance-")
 	if err != nil {
 		return fmt.Errorf("create fixture root: %w", err)
 	}
@@ -47,9 +47,9 @@ func run() error {
 		return err
 	}
 
-	server, err := dropserver.New(scanner.Options{Roots: []string{appsRoot}})
+	server, err := beaconr.New(scanner.Options{Roots: []string{appsRoot}})
 	if err != nil {
-		return fmt.Errorf("create Dropserve server: %w", err)
+		return fmt.Errorf("create Beacon server: %w", err)
 	}
 	defer func() {
 		_ = server.Close()
@@ -67,7 +67,7 @@ func run() error {
 	defer client.CloseIdleConnections()
 
 	dashboardURL := httpServer.URL + "/"
-	appsURL := httpServer.URL + "/_dropserve/api/apps"
+	appsURL := httpServer.URL + "/_beacon/api/apps"
 	staticURL := httpServer.URL + "/app-000/payload.bin"
 	for range 3 {
 		if _, err := firstByte(client, dashboardURL); err != nil {

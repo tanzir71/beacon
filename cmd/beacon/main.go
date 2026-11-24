@@ -1,4 +1,4 @@
-// Command dropserve is the Dropserve command-line entry point.
+// Command beacon is the Beacon command-line entry point.
 package main
 
 import (
@@ -20,46 +20,46 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/tanzir71/dropserve/internal/access"
-	"github.com/tanzir71/dropserve/internal/app"
-	"github.com/tanzir71/dropserve/internal/autostart"
-	"github.com/tanzir71/dropserve/internal/config"
-	"github.com/tanzir71/dropserve/internal/dashboard"
-	"github.com/tanzir71/dropserve/internal/discovery"
-	"github.com/tanzir71/dropserve/internal/doctor"
-	"github.com/tanzir71/dropserve/internal/firstrun"
-	"github.com/tanzir71/dropserve/internal/launch"
-	"github.com/tanzir71/dropserve/internal/ports"
-	"github.com/tanzir71/dropserve/internal/runtimes"
-	"github.com/tanzir71/dropserve/internal/scanner"
-	dropserver "github.com/tanzir71/dropserve/internal/server"
-	"github.com/tanzir71/dropserve/internal/state"
-	"github.com/tanzir71/dropserve/internal/supervisor"
-	"github.com/tanzir71/dropserve/internal/systemmemory"
-	"github.com/tanzir71/dropserve/internal/updatecheck"
-	"github.com/tanzir71/dropserve/internal/version"
+	"github.com/tanzir71/beacon/internal/access"
+	"github.com/tanzir71/beacon/internal/app"
+	"github.com/tanzir71/beacon/internal/autostart"
+	"github.com/tanzir71/beacon/internal/config"
+	"github.com/tanzir71/beacon/internal/dashboard"
+	"github.com/tanzir71/beacon/internal/discovery"
+	"github.com/tanzir71/beacon/internal/doctor"
+	"github.com/tanzir71/beacon/internal/firstrun"
+	"github.com/tanzir71/beacon/internal/launch"
+	"github.com/tanzir71/beacon/internal/ports"
+	"github.com/tanzir71/beacon/internal/runtimes"
+	"github.com/tanzir71/beacon/internal/scanner"
+	beaconr "github.com/tanzir71/beacon/internal/server"
+	"github.com/tanzir71/beacon/internal/state"
+	"github.com/tanzir71/beacon/internal/supervisor"
+	"github.com/tanzir71/beacon/internal/systemmemory"
+	"github.com/tanzir71/beacon/internal/updatecheck"
+	"github.com/tanzir71/beacon/internal/version"
 )
 
-const usage = `Dropserve hosts folders as local websites.
+const usage = `Beacon hosts folders as local websites.
 
 Usage:
-  dropserve serve                         run in the foreground
-  dropserve status                        print live state and apps as JSON
-  dropserve open                          open the dashboard
-  dropserve apps                          list discovered apps
-  dropserve add PATH                      register an app folder without moving it
-  dropserve logs SLUG [-f]                print or follow one command app's logs
-  dropserve restart SLUG                  restart one command app
-  dropserve autostart enable|disable|status
-  dropserve trust install|uninstall|status
-  dropserve firewall allow                allow private-network access on Windows
-  dropserve tailscale status|serve|unserve|funnel SLUG|unfunnel SLUG
-  dropserve runtime install php|mariadb|postgres
-  dropserve config path|validate|edit
-  dropserve healthz                       verify the running local server
-  dropserve doctor                        check this computer's setup
-  dropserve version                       print the version and build commit
-  dropserve help                          show this help
+  beacon serve                         run in the foreground
+  beacon status                        print live state and apps as JSON
+  beacon open                          open the dashboard
+  beacon apps                          list discovered apps
+  beacon add PATH                      register an app folder without moving it
+  beacon logs SLUG [-f]                print or follow one command app's logs
+  beacon restart SLUG                  restart one command app
+  beacon autostart enable|disable|status
+  beacon trust install|uninstall|status
+  beacon firewall allow                allow private-network access on Windows
+  beacon tailscale status|serve|unserve|funnel SLUG|unfunnel SLUG
+  beacon runtime install php|mariadb|postgres
+  beacon config path|validate|edit
+  beacon healthz                       verify the running local server
+  beacon doctor                        check this computer's setup
+  beacon version                       print the version and build commit
+  beacon help                          show this help
 `
 
 func main() {
@@ -82,7 +82,7 @@ func runWithConfigPath(args []string, stdout, stderr io.Writer, configPath strin
 	}
 	if args[0] == "--background" {
 		if err := writeBackgroundConsoleProbe(); err != nil {
-			if _, writeErr := fmt.Fprintf(stderr, "Dropserve could not write its background console probe: %v\n", err); writeErr != nil {
+			if _, writeErr := fmt.Fprintf(stderr, "Beacon could not write its background console probe: %v\n", err); writeErr != nil {
 				return 1
 			}
 			return 1
@@ -120,13 +120,13 @@ func runWithConfigPath(args []string, stdout, stderr io.Writer, configPath strin
 	case "config":
 		return configCommand(args[1:], stdout, stderr, configPath)
 	case "version", "--version", "-v":
-		if _, err := fmt.Fprintf(stdout, "dropserve %s (%s)\n", version.Version, version.Commit); err != nil {
+		if _, err := fmt.Fprintf(stdout, "beacon %s (%s)\n", version.Version, version.Commit); err != nil {
 			return 1
 		}
 		return 0
 	case "add":
 		if len(args) != 2 {
-			if _, err := fmt.Fprintln(stderr, "Choose one app folder: dropserve add <path>"); err != nil {
+			if _, err := fmt.Fprintln(stderr, "Choose one app folder: beacon add <path>"); err != nil {
 				return 1
 			}
 			return 2
@@ -135,7 +135,7 @@ func runWithConfigPath(args []string, stdout, stderr io.Writer, configPath strin
 			var err error
 			configPath, err = config.DefaultPath()
 			if err != nil {
-				if _, writeErr := fmt.Fprintf(stderr, "Dropserve could not find its config folder: %v\n", err); writeErr != nil {
+				if _, writeErr := fmt.Fprintf(stderr, "Beacon could not find its config folder: %v\n", err); writeErr != nil {
 					return 1
 				}
 				return 1
@@ -143,13 +143,13 @@ func runWithConfigPath(args []string, stdout, stderr io.Writer, configPath strin
 		}
 		registeredPath, changed, err := config.Register(configPath, args[1])
 		if err != nil {
-			if _, writeErr := fmt.Fprintf(stderr, "Dropserve could not add that folder: %v\n", err); writeErr != nil {
+			if _, writeErr := fmt.Fprintf(stderr, "Beacon could not add that folder: %v\n", err); writeErr != nil {
 				return 1
 			}
 			return 1
 		}
 		if changed {
-			if _, err := fmt.Fprintf(stdout, "Added %s. Dropserve will serve it without moving or changing it.\n", registeredPath); err != nil {
+			if _, err := fmt.Fprintf(stdout, "Added %s. Beacon will serve it without moving or changing it.\n", registeredPath); err != nil {
 				return 1
 			}
 		} else if _, err := fmt.Fprintf(stdout, "%s is already registered.\n", registeredPath); err != nil {
@@ -157,7 +157,7 @@ func runWithConfigPath(args []string, stdout, stderr io.Writer, configPath strin
 		}
 		return 0
 	default:
-		if _, err := fmt.Fprintf(stderr, "Unknown command %q. Run 'dropserve help' to see the available commands.\n", args[0]); err != nil {
+		if _, err := fmt.Fprintf(stderr, "Unknown command %q. Run 'beacon help' to see the available commands.\n", args[0]); err != nil {
 			return 1
 		}
 		return 2
@@ -169,7 +169,7 @@ func defaultCommand(stdout, stderr io.Writer, configPath string) int {
 		var err error
 		configPath, err = config.DefaultPath()
 		if err != nil {
-			if _, writeErr := fmt.Fprintf(stderr, "Dropserve could not find its config folder: %v\n", err); writeErr != nil {
+			if _, writeErr := fmt.Fprintf(stderr, "Beacon could not find its config folder: %v\n", err); writeErr != nil {
 				return 1
 			}
 			return 1
@@ -177,14 +177,14 @@ func defaultCommand(stdout, stderr io.Writer, configPath string) int {
 	}
 	statePath, err := state.DefaultPath()
 	if err != nil {
-		if _, writeErr := fmt.Fprintf(stderr, "Dropserve could not find its state folder: %v\n", err); writeErr != nil {
+		if _, writeErr := fmt.Fprintf(stderr, "Beacon could not find its state folder: %v\n", err); writeErr != nil {
 			return 1
 		}
 		return 1
 	}
 	configuration, err := config.Load(configPath)
 	if err != nil {
-		if _, writeErr := fmt.Fprintf(stderr, "Dropserve could not read its config: %v\n", err); writeErr != nil {
+		if _, writeErr := fmt.Fprintf(stderr, "Beacon could not read its config: %v\n", err); writeErr != nil {
 			return 1
 		}
 		return 1
@@ -195,7 +195,7 @@ func defaultCommand(stdout, stderr io.Writer, configPath string) int {
 	}
 	executable, err := os.Executable()
 	if err != nil {
-		if _, writeErr := fmt.Fprintf(stderr, "Dropserve could not find its executable: %v\n", err); writeErr != nil {
+		if _, writeErr := fmt.Fprintf(stderr, "Beacon could not find its executable: %v\n", err); writeErr != nil {
 			return 1
 		}
 		return 1
@@ -209,7 +209,7 @@ func defaultCommand(stdout, stderr io.Writer, configPath string) int {
 		DefaultAppsRoot: appsRoot,
 		Executable:      executable,
 		OpenBrowser: func(address string) error {
-			if _, writeErr := fmt.Fprintf(stdout, "Dropserve setup is at %s\n", address); writeErr != nil {
+			if _, writeErr := fmt.Fprintf(stdout, "Beacon setup is at %s\n", address); writeErr != nil {
 				return writeErr
 			}
 			if openErr := launch.OpenURL(address); openErr != nil {
@@ -220,7 +220,7 @@ func defaultCommand(stdout, stderr io.Writer, configPath string) int {
 		EnableAutostart: autostart.Enable,
 	})
 	if err != nil {
-		if _, writeErr := fmt.Fprintf(stderr, "Dropserve could not complete first-run setup: %v\n", err); writeErr != nil {
+		if _, writeErr := fmt.Fprintf(stderr, "Beacon could not complete first-run setup: %v\n", err); writeErr != nil {
 			return 1
 		}
 		return 1
@@ -250,7 +250,7 @@ func desktopAppsRoot(configuredRoot string, setupResult firstrun.Result) string 
 
 func autostartCommand(arguments []string, stdout, stderr io.Writer) int {
 	if len(arguments) != 1 {
-		if _, err := fmt.Fprintln(stderr, "Choose an autostart action: dropserve autostart enable|disable|status"); err != nil {
+		if _, err := fmt.Fprintln(stderr, "Choose an autostart action: beacon autostart enable|disable|status"); err != nil {
 			return 1
 		}
 		return 2
@@ -263,12 +263,12 @@ func autostartCommand(arguments []string, stdout, stderr io.Writer) int {
 			err = autostart.Enable(backgroundExecutable(executable))
 		}
 		if err != nil {
-			if _, writeErr := fmt.Fprintf(stderr, "Dropserve could not enable autostart: %v\n", err); writeErr != nil {
+			if _, writeErr := fmt.Fprintf(stderr, "Beacon could not enable autostart: %v\n", err); writeErr != nil {
 				return 1
 			}
 			return 1
 		}
-		if _, err := fmt.Fprintln(stdout, "Dropserve will start when you log in."); err != nil {
+		if _, err := fmt.Fprintln(stdout, "Beacon will start when you log in."); err != nil {
 			return 1
 		}
 		if note := autostart.EnableNote(); note != "" {
@@ -279,19 +279,19 @@ func autostartCommand(arguments []string, stdout, stderr io.Writer) int {
 		return 0
 	case "disable":
 		if err := autostart.Disable(); err != nil {
-			if _, writeErr := fmt.Fprintf(stderr, "Dropserve could not disable autostart: %v\n", err); writeErr != nil {
+			if _, writeErr := fmt.Fprintf(stderr, "Beacon could not disable autostart: %v\n", err); writeErr != nil {
 				return 1
 			}
 			return 1
 		}
-		if _, err := fmt.Fprintln(stdout, "Dropserve will not start automatically."); err != nil {
+		if _, err := fmt.Fprintln(stdout, "Beacon will not start automatically."); err != nil {
 			return 1
 		}
 		return 0
 	case "status":
 		enabled, err := autostart.Enabled()
 		if err != nil {
-			if _, writeErr := fmt.Fprintf(stderr, "Dropserve could not read autostart status: %v\n", err); writeErr != nil {
+			if _, writeErr := fmt.Fprintf(stderr, "Beacon could not read autostart status: %v\n", err); writeErr != nil {
 				return 1
 			}
 			return 1
@@ -305,7 +305,7 @@ func autostartCommand(arguments []string, stdout, stderr io.Writer) int {
 		}
 		return 0
 	default:
-		if _, err := fmt.Fprintln(stderr, "Choose an autostart action: dropserve autostart enable|disable|status"); err != nil {
+		if _, err := fmt.Fprintln(stderr, "Choose an autostart action: beacon autostart enable|disable|status"); err != nil {
 			return 1
 		}
 		return 2
@@ -369,7 +369,7 @@ func serveCommandContextWithReady(
 		return 2
 	}
 	if flags.NArg() != 0 {
-		if _, err := fmt.Fprintln(stderr, "The serve command accepts flags only. Run 'dropserve help' for examples."); err != nil {
+		if _, err := fmt.Fprintln(stderr, "The serve command accepts flags only. Run 'beacon help' for examples."); err != nil {
 			return 1
 		}
 		return 2
@@ -382,7 +382,7 @@ func serveCommandContextWithReady(
 			var err error
 			*configPath, err = config.DefaultPath()
 			if err != nil {
-				if _, writeErr := fmt.Fprintf(stderr, "Dropserve could not find its config folder: %v\n", err); writeErr != nil {
+				if _, writeErr := fmt.Fprintf(stderr, "Beacon could not find its config folder: %v\n", err); writeErr != nil {
 					return 1
 				}
 				return 1
@@ -390,7 +390,7 @@ func serveCommandContextWithReady(
 		}
 		loaded, err := config.Load(*configPath)
 		if err != nil {
-			if _, writeErr := fmt.Fprintf(stderr, "Dropserve could not read its config: %v\n", err); writeErr != nil {
+			if _, writeErr := fmt.Fprintf(stderr, "Beacon could not read its config: %v\n", err); writeErr != nil {
 				return 1
 			}
 			return 1
@@ -409,7 +409,7 @@ func serveCommandContextWithReady(
 		var err error
 		*statePath, err = state.DefaultPath()
 		if err != nil {
-			if _, writeErr := fmt.Fprintf(stderr, "Dropserve could not find its state folder: %v\n", err); writeErr != nil {
+			if _, writeErr := fmt.Fprintf(stderr, "Beacon could not find its state folder: %v\n", err); writeErr != nil {
 				return 1
 			}
 			return 1
@@ -428,7 +428,7 @@ func serveCommandContextWithReady(
 
 	listener, err := acquireMainListener(ctx, *listenAddress, *bindAddress, *statePath, configuration)
 	if err != nil {
-		if _, writeErr := fmt.Fprintf(stderr, "Dropserve could not start its HTTP listener: %v\n", err); writeErr != nil {
+		if _, writeErr := fmt.Fprintf(stderr, "Beacon could not start its HTTP listener: %v\n", err); writeErr != nil {
 			return 1
 		}
 		return 1
@@ -436,7 +436,7 @@ func serveCommandContextWithReady(
 	mainPort, err := listenerPort(listener.Addr())
 	if err != nil {
 		_ = listener.Close()
-		if _, writeErr := fmt.Fprintf(stderr, "Dropserve could not read its HTTP listener: %v\n", err); writeErr != nil {
+		if _, writeErr := fmt.Fprintf(stderr, "Beacon could not read its HTTP listener: %v\n", err); writeErr != nil {
 			return 1
 		}
 		return 1
@@ -447,10 +447,10 @@ func serveCommandContextWithReady(
 	}
 	lanIP, probeErr := probeLANIP()
 	if probeErr != nil {
-		_, _ = fmt.Fprintf(stderr, "Dropserve could not select a LAN address; loopback remains available: %v\n", probeErr)
+		_, _ = fmt.Fprintf(stderr, "Beacon could not select a LAN address; loopback remains available: %v\n", probeErr)
 	}
 	var runtimeWarnings []string
-	var handler *dropserver.Server
+	var handler *beaconr.Server
 	var servedHandler http.Handler
 	var updateNotice atomic.Pointer[dashboard.UpdateNotice]
 	var addonManager *runtimes.Manager
@@ -462,13 +462,13 @@ func serveCommandContextWithReady(
 			OnChange: func() {
 				if handler != nil {
 					if reconcileErr := handler.Reconcile(); reconcileErr != nil {
-						_, _ = fmt.Fprintf(stderr, "Dropserve could not refresh apps after an add-on change: %v\n", reconcileErr)
+						_, _ = fmt.Fprintf(stderr, "Beacon could not refresh apps after an add-on change: %v\n", reconcileErr)
 					}
 				}
 			},
 		})
 		if err != nil {
-			runtimeWarnings = append(runtimeWarnings, "Dropserve could not prepare optional add-ons: "+err.Error())
+			runtimeWarnings = append(runtimeWarnings, "Beacon could not prepare optional add-ons: "+err.Error())
 			addonManager = nil
 		}
 	}
@@ -515,8 +515,8 @@ func serveCommandContextWithReady(
 		}
 		serveEnabled, serveErr := discovery.ProbeTailscaleServe(probeContext, mainPort, tailscaleProbes)
 		if serveErr != nil {
-			status.Message = "Tailscale is running, but Dropserve could not verify tailnet HTTPS."
-			_, _ = fmt.Fprintf(stderr, "Dropserve could not read Tailscale Serve status: %v\n", serveErr)
+			status.Message = "Tailscale is running, but Beacon could not verify tailnet HTTPS."
+			_, _ = fmt.Fprintf(stderr, "Beacon could not read Tailscale Serve status: %v\n", serveErr)
 			return status, nil
 		}
 		status.ServeEnabled = serveEnabled
@@ -525,7 +525,7 @@ func serveCommandContextWithReady(
 	if live := liveConfiguration.Load(); live != nil && live.Discovery.Tailscale {
 		tailscaleStatus, tailscaleErr := probeTailscale(ctx)
 		if tailscaleErr != nil {
-			_, _ = fmt.Fprintf(stderr, "Dropserve could not read Tailscale status: %v\n", tailscaleErr)
+			_, _ = fmt.Fprintf(stderr, "Beacon could not read Tailscale status: %v\n", tailscaleErr)
 		} else {
 			discoveryManager.UpdateTailscale(tailscaleStatus)
 		}
@@ -536,7 +536,7 @@ func serveCommandContextWithReady(
 		OnChange:  publicSharingChanged,
 	})
 	if funnelErr != nil {
-		_, _ = fmt.Fprintf(stderr, "Dropserve disabled Tailscale Funnel because its state could not be read: %v\n", funnelErr)
+		_, _ = fmt.Fprintf(stderr, "Beacon disabled Tailscale Funnel because its state could not be read: %v\n", funnelErr)
 		funnel = nil
 	}
 	httpsConfigPath := *configPath
@@ -586,7 +586,7 @@ func serveCommandContextWithReady(
 		}
 		return discoveryManager.SetTailscaleServeEnabled(enabled)
 	}
-	handler, err = dropserver.NewWithOptions(dropserver.Options{
+	handler, err = beaconr.NewWithOptions(beaconr.Options{
 		Scanner: scanner.Options{
 			Roots:             configuration.Server.AppsRoots,
 			Registered:        configuration.Server.RegisteredApps,
@@ -645,7 +645,7 @@ func serveCommandContextWithReady(
 	})
 	if err != nil {
 		_ = listener.Close()
-		if _, writeErr := fmt.Fprintf(stderr, "Dropserve could not scan your app folders: %v\n", err); writeErr != nil {
+		if _, writeErr := fmt.Fprintf(stderr, "Beacon could not scan your app folders: %v\n", err); writeErr != nil {
 			return 1
 		}
 		return 1
@@ -654,7 +654,7 @@ func serveCommandContextWithReady(
 	accessGate, err := access.New(handler.Handler(), configuration.Security.PINEnabled, configuration.Security.PINHash)
 	if err != nil {
 		_ = listener.Close()
-		_, _ = fmt.Fprintf(stderr, "Dropserve could not apply its PIN lock: %v\n", err)
+		_, _ = fmt.Fprintf(stderr, "Beacon could not apply its PIN lock: %v\n", err)
 		return 1
 	}
 	servedHandler = accessGate
@@ -666,7 +666,7 @@ func serveCommandContextWithReady(
 		}, updateTriggers, updatecheck.Check)
 	}
 
-	listenerRuntime := dropserver.NewListenerRuntime(servedHandler)
+	listenerRuntime := beaconr.NewListenerRuntime(servedHandler)
 	listenerRuntime.Start(listener)
 	if configuration.Server.HTTPSPort > 0 {
 		if httpsErr := httpsController.SetEnabled(ctx, true); httpsErr != nil {
@@ -737,11 +737,11 @@ func serveCommandContextWithReady(
 					updated.Server.AppPortRange[0],
 					updated.Server.AppPortRange[1],
 				); updateErr != nil {
-					_, _ = fmt.Fprintf(stderr, "Dropserve ignored a config edit and kept the last good settings: %v\n", updateErr)
+					_, _ = fmt.Fprintf(stderr, "Beacon ignored a config edit and kept the last good settings: %v\n", updateErr)
 					return
 				}
 				if updateErr := accessGate.Update(updated.Security.PINEnabled, updated.Security.PINHash); updateErr != nil {
-					_, _ = fmt.Fprintf(stderr, "Dropserve ignored a PIN config edit and kept the last good PIN: %v\n", updateErr)
+					_, _ = fmt.Fprintf(stderr, "Beacon ignored a PIN config edit and kept the last good PIN: %v\n", updateErr)
 					return
 				}
 				previous := liveConfiguration.Load()
@@ -772,26 +772,26 @@ func serveCommandContextWithReady(
 					}()
 				}
 				if previous != nil && (updated.Server.Bind != previous.Server.Bind || updated.Server.HTTPPort != previous.Server.HTTPPort || updated.Server.HTTPSPort != previous.Server.HTTPSPort) {
-					_, _ = fmt.Fprintln(stderr, "Dropserve reloaded config.toml; listener bind and port changes take effect after restart.")
+					_, _ = fmt.Fprintln(stderr, "Beacon reloaded config.toml; listener bind and port changes take effect after restart.")
 				} else {
-					_, _ = fmt.Fprintln(stderr, "Dropserve reloaded config.toml.")
+					_, _ = fmt.Fprintln(stderr, "Beacon reloaded config.toml.")
 				}
 			}, func(loadErr error) {
-				_, _ = fmt.Fprintf(stderr, "Dropserve ignored a malformed config edit and kept the last good settings: %v\n", loadErr)
+				_, _ = fmt.Fprintf(stderr, "Beacon ignored a malformed config edit and kept the last good settings: %v\n", loadErr)
 			})
 			if watchErr != nil && ctx.Err() == nil {
-				_, _ = fmt.Fprintf(stderr, "Dropserve could not watch config.toml: %v\n", watchErr)
+				_, _ = fmt.Fprintf(stderr, "Beacon could not watch config.toml: %v\n", watchErr)
 			}
 		}()
 	}
 
 	address := listenerURL(listener.Addr())
-	if _, err := fmt.Fprintf(stdout, "Dropserve is ready at %s\n", address); err != nil {
+	if _, err := fmt.Fprintf(stdout, "Beacon is ready at %s\n", address); err != nil {
 		return 1
 	}
 	if *openDashboard {
 		if err := launch.OpenURL(address); err != nil {
-			if _, writeErr := fmt.Fprintf(stderr, "Dropserve could not open the dashboard automatically: %v\n", err); writeErr != nil {
+			if _, writeErr := fmt.Fprintf(stderr, "Beacon could not open the dashboard automatically: %v\n", err); writeErr != nil {
 				return 1
 			}
 		}
@@ -806,10 +806,10 @@ func serveCommandContextWithReady(
 	shutdownContext, cancelShutdown := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
 	defer cancelShutdown()
 	if err := httpsController.Shutdown(shutdownContext); err != nil {
-		_, _ = fmt.Fprintf(stderr, "Dropserve could not stop its HTTPS listener cleanly: %v\n", err)
+		_, _ = fmt.Fprintf(stderr, "Beacon could not stop its HTTPS listener cleanly: %v\n", err)
 	}
 	if err := listenerRuntime.Shutdown(shutdownContext); err != nil {
-		_, _ = fmt.Fprintf(stderr, "Dropserve could not stop its HTTP listener cleanly: %v\n", err)
+		_, _ = fmt.Fprintf(stderr, "Beacon could not stop its HTTP listener cleanly: %v\n", err)
 		return 1
 	}
 	return 0
@@ -935,7 +935,7 @@ func statusCommand(arguments []string, stdout, stderr io.Writer) int {
 		var err error
 		*statePath, err = state.DefaultPath()
 		if err != nil {
-			if _, writeErr := fmt.Fprintf(stderr, "Dropserve could not find its state folder: %v\n", err); writeErr != nil {
+			if _, writeErr := fmt.Fprintf(stderr, "Beacon could not find its state folder: %v\n", err); writeErr != nil {
 				return 1
 			}
 			return 1
@@ -943,7 +943,7 @@ func statusCommand(arguments []string, stdout, stderr io.Writer) int {
 	}
 	snapshot, err := state.Load(*statePath)
 	if err != nil {
-		if _, writeErr := fmt.Fprintf(stderr, "Dropserve could not read its runtime state: %v\n", err); writeErr != nil {
+		if _, writeErr := fmt.Fprintf(stderr, "Beacon could not read its runtime state: %v\n", err); writeErr != nil {
 			return 1
 		}
 		return 1
@@ -951,10 +951,10 @@ func statusCommand(arguments []string, stdout, stderr io.Writer) int {
 	if snapshot.HTTPPort > 0 && snapshot.HTTPPort <= 65535 {
 		api := localAPIForPort(snapshot.HTTPPort)
 		var live map[string]any
-		if liveErr := api.get(context.Background(), "/_dropserve/api/status", &live); liveErr == nil {
+		if liveErr := api.get(context.Background(), "/_beacon/api/status", &live); liveErr == nil {
 			var applications []cliApp
-			if appsErr := api.get(context.Background(), "/_dropserve/api/apps", &applications); appsErr != nil {
-				_, _ = fmt.Fprintf(stderr, "Dropserve could not read its live app list: %v\n", appsErr)
+			if appsErr := api.get(context.Background(), "/_beacon/api/apps", &applications); appsErr != nil {
+				_, _ = fmt.Fprintf(stderr, "Beacon could not read its live app list: %v\n", appsErr)
 				return 1
 			}
 			live["apps"] = applications
@@ -1011,38 +1011,38 @@ func healthzCommand(arguments []string, stdout, stderr io.Writer) int {
 		var err error
 		*statePath, err = state.DefaultPath()
 		if err != nil {
-			_, _ = fmt.Fprintf(stderr, "Dropserve could not find its state folder: %v\n", err)
+			_, _ = fmt.Fprintf(stderr, "Beacon could not find its state folder: %v\n", err)
 			return 1
 		}
 	}
 	snapshot, err := state.Load(*statePath)
 	if err != nil {
-		_, _ = fmt.Fprintf(stderr, "Dropserve could not read its runtime state: %v\n", err)
+		_, _ = fmt.Fprintf(stderr, "Beacon could not read its runtime state: %v\n", err)
 		return 1
 	}
 	if snapshot.HTTPPort < 1 || snapshot.HTTPPort > 65535 {
-		_, _ = fmt.Fprintln(stderr, "Dropserve is not healthy: no running HTTP port is recorded.")
+		_, _ = fmt.Fprintln(stderr, "Beacon is not healthy: no running HTTP port is recorded.")
 		return 1
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
-	requestURL := fmt.Sprintf("http://127.0.0.1:%d/_dropserve/healthz", snapshot.HTTPPort)
+	requestURL := fmt.Sprintf("http://127.0.0.1:%d/_beacon/healthz", snapshot.HTTPPort)
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, requestURL, nil)
 	if err != nil {
-		_, _ = fmt.Fprintf(stderr, "Dropserve is not healthy: %v\n", err)
+		_, _ = fmt.Fprintf(stderr, "Beacon is not healthy: %v\n", err)
 		return 1
 	}
 	transport := &http.Transport{Proxy: nil}
 	defer transport.CloseIdleConnections()
 	response, err := (&http.Client{Transport: transport}).Do(request)
 	if err != nil {
-		_, _ = fmt.Fprintf(stderr, "Dropserve is not healthy: %v\n", err)
+		_, _ = fmt.Fprintf(stderr, "Beacon is not healthy: %v\n", err)
 		return 1
 	}
 	defer func() { _ = response.Body.Close() }()
 	body, err := io.ReadAll(io.LimitReader(response.Body, 16))
 	if err != nil || response.StatusCode != http.StatusOK || strings.TrimSpace(string(body)) != "ok" {
-		_, _ = fmt.Fprintf(stderr, "Dropserve is not healthy: local health check returned HTTP %d.\n", response.StatusCode)
+		_, _ = fmt.Fprintf(stderr, "Beacon is not healthy: local health check returned HTTP %d.\n", response.StatusCode)
 		return 1
 	}
 	if _, err := fmt.Fprintln(stdout, "ok"); err != nil {
@@ -1080,7 +1080,7 @@ func doctorCommandWithProbes(
 		var err error
 		*configPath, err = config.DefaultPath()
 		if err != nil {
-			if _, writeErr := fmt.Fprintf(stderr, "Dropserve doctor could not find its config folder: %v\n", err); writeErr != nil {
+			if _, writeErr := fmt.Fprintf(stderr, "Beacon doctor could not find its config folder: %v\n", err); writeErr != nil {
 				return 1
 			}
 			return 1

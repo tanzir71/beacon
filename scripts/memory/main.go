@@ -1,4 +1,4 @@
-// Command memory enforces Dropserve's M11 resident-memory floor.
+// Command memory enforces Beacon's M11 resident-memory floor.
 package main
 
 import (
@@ -13,8 +13,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/tanzir71/dropserve/internal/scanner"
-	dropserver "github.com/tanzir71/dropserve/internal/server"
+	"github.com/tanzir71/beacon/internal/scanner"
+	beaconr "github.com/tanzir71/beacon/internal/server"
 )
 
 const fixtureApps = 50
@@ -35,7 +35,7 @@ func run(soakDuration time.Duration) error {
 	if soakDuration <= 0 {
 		return fmt.Errorf("soak duration must be positive: %s", soakDuration)
 	}
-	appsRoot, err := os.MkdirTemp("", "dropserve-memory-")
+	appsRoot, err := os.MkdirTemp("", "beacon-memory-")
 	if err != nil {
 		return fmt.Errorf("create fixture root: %w", err)
 	}
@@ -46,9 +46,9 @@ func run(soakDuration time.Duration) error {
 		return err
 	}
 
-	server, err := dropserver.New(scanner.Options{Roots: []string{appsRoot}})
+	server, err := beaconr.New(scanner.Options{Roots: []string{appsRoot}})
 	if err != nil {
-		return fmt.Errorf("create Dropserve server: %w", err)
+		return fmt.Errorf("create Beacon server: %w", err)
 	}
 	defer func() {
 		_ = server.Close()

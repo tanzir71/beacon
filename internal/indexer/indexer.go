@@ -14,7 +14,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/tanzir71/dropserve/internal/app"
+	"github.com/tanzir71/beacon/internal/app"
 )
 
 // URLs contains verified ways to reach an app.

@@ -10,7 +10,7 @@ import (
 )
 
 // ProbeTailscaleServe reads the client's persisted Serve configuration and
-// reports true only when its root handler targets this Dropserve listener.
+// reports true only when its root handler targets this Beacon listener.
 func ProbeTailscaleServe(ctx context.Context, mainPort int, probes TailscaleProbes) (bool, error) {
 	probes = defaultTailscaleProbes(probes)
 	binary := locateTailscale(probes)
@@ -69,7 +69,7 @@ func TailscaleFunnelExecutor(mainPort int, probes TailscaleProbes) func(context.
 	}
 }
 
-// SetTailscaleServe enables or disables tailnet-only HTTPS for all Dropserve
+// SetTailscaleServe enables or disables tailnet-only HTTPS for all Beacon
 // routes through the installed Tailscale client.
 func SetTailscaleServe(ctx context.Context, mainPort int, enable bool, probes TailscaleProbes) error {
 	probes = defaultTailscaleProbes(probes)

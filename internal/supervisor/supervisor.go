@@ -20,7 +20,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/tanzir71/dropserve/internal/app"
+	"github.com/tanzir71/beacon/internal/app"
 )
 
 const healthDeadline = 30 * time.Second
@@ -401,7 +401,7 @@ type lazyHandler struct {
 func (handler *lazyHandler) ServeHTTP(response http.ResponseWriter, request *http.Request) {
 	proxy, err := handler.manager.startLazy(handler.application, handler.placeholder)
 	if err != nil {
-		http.Error(response, "Dropserve could not start this app: "+err.Error(), http.StatusInternalServerError)
+		http.Error(response, "Beacon could not start this app: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 	proxy.ServeHTTP(response, request)
@@ -427,7 +427,7 @@ func (handler *managedHandler) ServeHTTP(response http.ResponseWriter, request *
 	target := handler.target
 	handler.mu.RUnlock()
 	if target == nil {
-		http.Error(response, "Dropserve is preparing this app.", http.StatusServiceUnavailable)
+		http.Error(response, "Beacon is preparing this app.", http.StatusServiceUnavailable)
 		return
 	}
 	target.ServeHTTP(response, request)
@@ -655,7 +655,7 @@ func (process *Process) StartContext(ctx context.Context) error {
 		return rewriteHTMLResponse(response, prefix, process.application.BaseHref)
 	}
 	proxy.ErrorHandler = func(response http.ResponseWriter, _ *http.Request, proxyErr error) {
-		http.Error(response, "Dropserve could not reach this app: "+proxyErr.Error(), http.StatusBadGateway)
+		http.Error(response, "Beacon could not reach this app: "+proxyErr.Error(), http.StatusBadGateway)
 	}
 	process.proxy = proxy
 	process.prefersOwnPort = probeRootAbsoluteReferences(target.String())
@@ -837,8 +837,8 @@ func commandEnvironment(application app.App, port int) []string {
 		normalizedName := environmentNameKey(name)
 		present[normalizedName] = struct{}{}
 		_, replacedByApp := appEnvironment[normalizedName]
-		_, replacedByDropserve := overrides[normalizedName]
-		if found && (replacedByApp || replacedByDropserve) {
+		_, replacedByBeacon := overrides[normalizedName]
+		if found && (replacedByApp || replacedByBeacon) {
 			continue
 		}
 		environment = append(environment, item)
@@ -891,7 +891,7 @@ func crashedHandler(application app.App, startError error) http.Handler {
 		}
 		_, _ = fmt.Fprintf(
 			response,
-			"<!doctype html><title>%s stopped · Dropserve</title><h1>%s stopped after five starts.</h1><p>Open its logs in Dropserve to see the error.</p><!-- %s -->",
+			"<!doctype html><title>%s stopped · Beacon</title><h1>%s stopped after five starts.</h1><p>Open its logs in Beacon to see the error.</p><!-- %s -->",
 			name,
 			name,
 			startError,
@@ -910,7 +910,7 @@ func needsRuntimeHandler(application app.App) http.Handler {
 		}
 		_, _ = fmt.Fprintf(
 			response,
-			"<!doctype html><title>%s needs %s · Dropserve</title><h1>%s needs %s.</h1><p>To open this app, install %s and restart Dropserve.</p>",
+			"<!doctype html><title>%s needs %s · Beacon</title><h1>%s needs %s.</h1><p>To open this app, install %s and restart Beacon.</p>",
 			name,
 			runtimeName,
 			name,
@@ -931,7 +931,7 @@ func startingHandler(application app.App) http.Handler {
 		}
 		_, _ = fmt.Fprintf(
 			response,
-			"<!doctype html><meta http-equiv=\"refresh\" content=\"1\"><title>%s is starting · Dropserve</title><h1>%s is starting…</h1><p>This page will try again in a moment.</p>",
+			"<!doctype html><meta http-equiv=\"refresh\" content=\"1\"><title>%s is starting · Beacon</title><h1>%s is starting…</h1><p>This page will try again in a moment.</p>",
 			name,
 			name,
 		)

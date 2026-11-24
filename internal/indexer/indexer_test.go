@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/tanzir71/dropserve/internal/app"
+	"github.com/tanzir71/beacon/internal/app"
 )
 
 func TestBuildExtractsDashboardMetadata(t *testing.T) {

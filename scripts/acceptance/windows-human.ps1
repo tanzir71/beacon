@@ -32,7 +32,7 @@ function Invoke-NativeText {
     return $text
 }
 
-function Invoke-Dropserve {
+function Invoke-Beacon {
     param(
         [string[]]$Arguments,
         [string]$Label
@@ -154,7 +154,7 @@ function Get-SHA256Text {
     }
 }
 
-function Wait-Dropserve {
+function Wait-Beacon {
     $deadline = [DateTime]::UtcNow.AddSeconds(20)
     do {
         if ($script:serverProcess.HasExited) {
@@ -164,13 +164,13 @@ function Wait-Dropserve {
             else {
                 ""
             }
-            throw "Dropserve exited before becoming healthy: $stderr"
+            throw "Beacon exited before becoming healthy: $stderr"
         }
         if (Test-Path -LiteralPath $script:statePath -PathType Leaf) {
             try {
                 $state = Get-Content -LiteralPath $script:statePath -Raw | ConvertFrom-Json -ErrorAction Stop
                 $response = Invoke-WebRequest `
-                    -Uri "http://127.0.0.1:$($state.http_port)/_dropserve/healthz" `
+                    -Uri "http://127.0.0.1:$($state.http_port)/_beacon/healthz" `
                     -TimeoutSec 2 `
                     -UseBasicParsing
                 if ($response.StatusCode -eq 200 -and $response.Content.Trim() -eq "ok") {
@@ -183,7 +183,7 @@ function Wait-Dropserve {
         }
         Start-Sleep -Milliseconds 100
     } while ([DateTime]::UtcNow -lt $deadline)
-    throw "Dropserve did not become healthy within 20 seconds."
+    throw "Beacon did not become healthy within 20 seconds."
 }
 
 function Wait-RootCertificate {
@@ -194,7 +194,7 @@ function Wait-RootCertificate {
         }
         Start-Sleep -Milliseconds 100
     } while ([DateTime]::UtcNow -lt $deadline)
-    throw "Dropserve did not create its isolated local HTTPS root within 20 seconds."
+    throw "Beacon did not create its isolated local HTTPS root within 20 seconds."
 }
 
 function Invoke-M7Acceptance {
@@ -219,12 +219,12 @@ function Invoke-M7Acceptance {
         throw "M7 was cancelled before changing Tailscale Serve."
     }
 
-    $null = Invoke-Dropserve -Arguments @("tailscale", "serve") -Label "dropserve tailscale serve"
+    $null = Invoke-Beacon -Arguments @("tailscale", "serve") -Label "beacon tailscale serve"
     $script:serveEnabledByHarness = $true
     $expectedProxy = "http://127.0.0.1:$($script:httpPort)"
     $enabled = Get-TailscaleServeStatus
     if (-not (Test-ExpectedServeProxy -Status $enabled -ExpectedProxy $expectedProxy)) {
-        throw "Tailscale Serve did not publish the expected Dropserve proxy $expectedProxy."
+        throw "Tailscale Serve did not publish the expected Beacon proxy $expectedProxy."
     }
 
     $tailnetURL = "https://$dnsName/"
@@ -233,10 +233,10 @@ function Invoke-M7Acceptance {
         throw "Tailnet HTTPS returned $($response.StatusCode), expected 200."
     }
 
-    $null = Invoke-Dropserve -Arguments @("tailscale", "unserve") -Label "dropserve tailscale unserve"
+    $null = Invoke-Beacon -Arguments @("tailscale", "unserve") -Label "beacon tailscale unserve"
     $script:serveEnabledByHarness = $false
     if (-not (Test-ServeConfigurationEmpty -Status (Get-TailscaleServeStatus))) {
-        throw "Tailscale Serve still has configuration after Dropserve disabled it."
+        throw "Tailscale Serve still has configuration after Beacon disabled it."
     }
 
     Add-Evidence "- M7 PASS: production Serve published the expected loopback proxy, tailnet HTTPS returned 200, and production unserve restored an empty Serve configuration."
@@ -253,13 +253,13 @@ function Invoke-M8Acceptance {
     }
 
     Write-Host "M8 will run the shipping trust command. Windows will show its root-certificate security warning."
-    Write-Host "Review that warning and approve it only if it names the isolated Dropserve certificate."
+    Write-Host "Review that warning and approve it only if it names the isolated Beacon certificate."
     $confirmation = Read-Host "Type TRUST to continue"
     if ($confirmation -cne "TRUST") {
         throw "M8 was cancelled before changing the Windows trust store."
     }
 
-    $null = Invoke-Dropserve -Arguments @("trust", "install") -Label "dropserve trust install"
+    $null = Invoke-Beacon -Arguments @("trust", "install") -Label "beacon trust install"
     $script:trustInstalledByHarness = $true
     $installedCount = Get-TrustedRootCount -Thumbprint $thumbprint
     if ($installedCount -ne 1) {
@@ -271,7 +271,7 @@ function Invoke-M8Acceptance {
         throw "Trusted local HTTPS returned $($response.StatusCode), expected 200."
     }
 
-    $null = Invoke-Dropserve -Arguments @("trust", "uninstall") -Label "dropserve trust uninstall"
+    $null = Invoke-Beacon -Arguments @("trust", "uninstall") -Label "beacon trust uninstall"
     $script:trustInstalledByHarness = $false
     $remainingCount = Get-TrustedRootCount -Thumbprint $thumbprint
     if ($remainingCount -ne 0) {
@@ -291,19 +291,19 @@ if (-not [Environment]::UserInteractive) {
 
 $repositoryRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 if ($Binary -eq "") {
-    $Binary = Join-Path $repositoryRoot "bin\dropserve-cli.exe"
+    $Binary = Join-Path $repositoryRoot "bin\beacon-cli.exe"
 }
 $script:binaryPath = (Resolve-Path -LiteralPath $Binary -ErrorAction Stop).Path
 
 $temporaryRoot = [System.IO.Path]::GetFullPath([System.IO.Path]::GetTempPath())
-$script:workspace = Join-Path $temporaryRoot ("dropserve-human-acceptance-" + [Guid]::NewGuid().ToString("N"))
+$script:workspace = Join-Path $temporaryRoot ("beacon-human-acceptance-" + [Guid]::NewGuid().ToString("N"))
 $script:workspace = [System.IO.Path]::GetFullPath($script:workspace)
 if (-not $script:workspace.StartsWith($temporaryRoot, [StringComparison]::OrdinalIgnoreCase) -or
-    (Split-Path -Leaf $script:workspace) -notlike "dropserve-human-acceptance-*") {
+    (Split-Path -Leaf $script:workspace) -notlike "beacon-human-acceptance-*") {
     throw "Refusing to use an acceptance workspace outside the Windows temporary directory."
 }
 if ($EvidencePath -eq "") {
-    $EvidencePath = Join-Path $temporaryRoot ("dropserve-v1-human-evidence-" + [DateTime]::UtcNow.ToString("yyyyMMddTHHmmssZ") + ".md")
+    $EvidencePath = Join-Path $temporaryRoot ("beacon-v1-human-evidence-" + [DateTime]::UtcNow.ToString("yyyyMMddTHHmmssZ") + ".md")
 }
 $EvidencePath = [System.IO.Path]::GetFullPath($EvidencePath)
 if ($EvidencePath.StartsWith($script:workspace + [System.IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase)) {
@@ -311,12 +311,12 @@ if ($EvidencePath.StartsWith($script:workspace + [System.IO.Path]::DirectorySepa
 }
 
 $script:evidence = [System.Collections.Generic.List[string]]::new()
-Add-Evidence "# Dropserve v1 human acceptance evidence"
+Add-Evidence "# Beacon v1 human acceptance evidence"
 Add-Evidence ""
 Add-Evidence "- Evidence transcript created: $([DateTime]::UtcNow.ToString("o"))"
 Add-Evidence "- Stage: $Stage"
 Add-Evidence "- Windows: $([Environment]::OSVersion.VersionString)"
-Add-Evidence "- Dropserve binary SHA-256: ``$((Get-FileHash -LiteralPath $script:binaryPath -Algorithm SHA256).Hash.ToLowerInvariant())``"
+Add-Evidence "- Beacon binary SHA-256: ``$((Get-FileHash -LiteralPath $script:binaryPath -Algorithm SHA256).Hash.ToLowerInvariant())``"
 
 $oldLocalAppData = $env:LOCALAPPDATA
 $oldAppData = $env:APPDATA
@@ -329,18 +329,18 @@ $script:httpsPort = if ($Stage -in @("M8", "All")) { Get-FreeTCPPort } else { 0 
 $localAppData = Join-Path $script:workspace "LocalAppData"
 $roamingAppData = Join-Path $script:workspace "RoamingAppData"
 $appsRoot = Join-Path $script:workspace "Apps"
-$script:statePath = Join-Path $localAppData "Dropserve\state.json"
-$configPath = Join-Path $roamingAppData "Dropserve\config.toml"
+$script:statePath = Join-Path $localAppData "Beacon\state.json"
+$configPath = Join-Path $roamingAppData "Beacon\config.toml"
 $script:rootCertificatePath = Join-Path (Split-Path -Parent $script:statePath) "ca\root.pem"
-$script:serverStdout = Join-Path $script:workspace "dropserve.stdout.log"
-$script:serverStderr = Join-Path $script:workspace "dropserve.stderr.log"
+$script:serverStdout = Join-Path $script:workspace "beacon.stdout.log"
+$script:serverStderr = Join-Path $script:workspace "beacon.stderr.log"
 
 try {
     New-Item -ItemType Directory -Path $appsRoot -Force | Out-Null
     New-Item -ItemType Directory -Path (Split-Path -Parent $configPath) -Force | Out-Null
     [System.IO.File]::WriteAllText(
         (Join-Path $appsRoot "index.html"),
-        "<!doctype html><title>Dropserve human acceptance</title><h1>Dropserve human acceptance</h1>",
+        "<!doctype html><title>Beacon human acceptance</title><h1>Beacon human acceptance</h1>",
         [System.Text.UTF8Encoding]::new($false)
     )
     $appsTOML = $appsRoot.Replace("\", "/")
@@ -354,7 +354,7 @@ app_port_range = [7400, 7999]
 
 [discovery]
 mdns = false
-mdns_name = "dropserve"
+mdns_name = "beacon"
 tailscale = true
 
 [updates]
@@ -377,7 +377,7 @@ check = false
         -RedirectStandardError $script:serverStderr `
         -WindowStyle Hidden `
         -PassThru
-    $script:httpPort = Wait-Dropserve
+    $script:httpPort = Wait-Beacon
 
     if ($Stage -in @("M7", "All")) {
         Invoke-M7Acceptance
@@ -394,7 +394,7 @@ catch {
 finally {
     if ($script:serveEnabledByHarness -and $null -ne $script:serverProcess -and -not $script:serverProcess.HasExited) {
         try {
-            $null = Invoke-Dropserve -Arguments @("tailscale", "unserve") -Label "dropserve tailscale unserve cleanup"
+            $null = Invoke-Beacon -Arguments @("tailscale", "unserve") -Label "beacon tailscale unserve cleanup"
             Add-Evidence "- Cleanup: removed the Tailscale Serve mapping enabled by this harness."
         }
         catch {
@@ -403,7 +403,7 @@ finally {
     }
     if ($script:trustInstalledByHarness) {
         try {
-            $null = Invoke-Dropserve -Arguments @("trust", "uninstall") -Label "dropserve trust uninstall cleanup"
+            $null = Invoke-Beacon -Arguments @("trust", "uninstall") -Label "beacon trust uninstall cleanup"
             Add-Evidence "- Cleanup: removed the isolated root installed by this harness."
         }
         catch {

@@ -13,7 +13,7 @@ module.exports = defineConfig({
   },
   webServer: {
     command: 'go run .',
-    url: 'http://127.0.0.1:17431/_dropserve/api/status',
+    url: 'http://127.0.0.1:17431/_beacon/api/status',
     reuseExistingServer: false,
     timeout: 120000,
   },

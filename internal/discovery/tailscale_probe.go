@@ -25,7 +25,7 @@ func ProbeTailscale(ctx context.Context, probes TailscaleProbes) (TailscaleStatu
 	if binary == "" {
 		return TailscaleStatus{
 			BackendState: "NotInstalled",
-			Message:      "Tailscale is not installed. Install it to reach Dropserve through your tailnet.",
+			Message:      "Tailscale is not installed. Install it to reach Beacon through your tailnet.",
 		}, nil
 	}
 	output, err := probes.Run(ctx, binary, "status", "--json")

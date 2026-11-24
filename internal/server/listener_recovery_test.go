@@ -12,9 +12,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/tanzir71/dropserve/internal/dashboard"
-	"github.com/tanzir71/dropserve/internal/discovery"
-	"github.com/tanzir71/dropserve/internal/indexer"
+	"github.com/tanzir71/beacon/internal/dashboard"
+	"github.com/tanzir71/beacon/internal/discovery"
+	"github.com/tanzir71/beacon/internal/indexer"
 )
 
 func TestNetworkChangeRecoversClosedListenerAndRefreshesAddresses(t *testing.T) {
@@ -95,7 +95,7 @@ func TestNetworkChangeRecoversClosedListenerAndRefreshesAddresses(t *testing.T) 
 		t.Fatalf("app request count = %d, want 1 after recovery", appRequests.Load())
 	}
 
-	statusResponse := getRecoveryURL(t, baseURL+"/_dropserve/api/status")
+	statusResponse := getRecoveryURL(t, baseURL+"/_beacon/api/status")
 	var status struct {
 		Network struct {
 			LANIP string `json:"lan_ip"`
@@ -109,7 +109,7 @@ func TestNetworkChangeRecoversClosedListenerAndRefreshesAddresses(t *testing.T) 
 	if status.Network.LANIP != changedIP.String() {
 		t.Fatalf("status LAN IP = %q, want %s", status.Network.LANIP, changedIP)
 	}
-	urlsResponse := getRecoveryURL(t, baseURL+"/_dropserve/api/urls")
+	urlsResponse := getRecoveryURL(t, baseURL+"/_beacon/api/urls")
 	var urls []struct {
 		Kind string `json:"kind"`
 		URL  string `json:"url"`

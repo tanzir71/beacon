@@ -20,11 +20,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/tanzir71/dropserve/internal/app"
-	phpfastcgi "github.com/tanzir71/dropserve/internal/php"
-	"github.com/tanzir71/dropserve/internal/runtimes"
-	"github.com/tanzir71/dropserve/internal/scanner"
-	dropserver "github.com/tanzir71/dropserve/internal/server"
+	"github.com/tanzir71/beacon/internal/app"
+	phpfastcgi "github.com/tanzir71/beacon/internal/php"
+	"github.com/tanzir71/beacon/internal/runtimes"
+	"github.com/tanzir71/beacon/internal/scanner"
+	beaconr "github.com/tanzir71/beacon/internal/server"
 )
 
 type phpFixtureResponse struct {
@@ -42,7 +42,7 @@ func TestPHPFixtureSupportsGetPostUploadAndPathInfo(t *testing.T) {
 		Workers: 2,
 		Command: func(ctx context.Context, address string) *exec.Cmd {
 			command := exec.CommandContext(ctx, os.Args[0], "-test.run=TestPHPWorkerProcess", "--", "-b", address) // #nosec G204,G702 -- test executable and loopback address are controlled by this test.
-			command.Env = append(os.Environ(), "DROPSERVE_TEST_PHP_WORKER=1")
+			command.Env = append(os.Environ(), "BEACON_TEST_PHP_WORKER=1")
 			return command
 		},
 	})
@@ -63,7 +63,7 @@ func TestPHPFixtureSupportsGetPostUploadAndPathInfo(t *testing.T) {
 func TestPHPHandlerCanBecomeAvailableAfterReconcile(t *testing.T) {
 	t.Parallel()
 	active := false
-	server, err := dropserver.NewWithOptions(dropserver.Options{
+	server, err := beaconr.NewWithOptions(beaconr.Options{
 		Scanner: scanner.Options{Registered: []string{phpFixtureRoot(t)}},
 		PHPHandler: func(app.App) (http.Handler, error) {
 			if !active {
@@ -95,8 +95,8 @@ func TestPHPHandlerCanBecomeAvailableAfterReconcile(t *testing.T) {
 }
 
 func TestRealOfficialPHPPackFixture(t *testing.T) {
-	if os.Getenv("DROPSERVE_REAL_PHP") != "1" {
-		t.Skip("set DROPSERVE_REAL_PHP=1 for the official PHP pack smoke test")
+	if os.Getenv("BEACON_REAL_PHP") != "1" {
+		t.Skip("set BEACON_REAL_PHP=1 for the official PHP pack smoke test")
 	}
 	pack, err := runtimes.CurrentPHPPack()
 	if err != nil {
@@ -132,7 +132,7 @@ func assertPHPFixtureBehavior(t *testing.T, pool *phpfastcgi.Pool) {
 	t.Helper()
 
 	fixture := phpFixtureRoot(t)
-	server, err := dropserver.NewWithOptions(dropserver.Options{
+	server, err := beaconr.NewWithOptions(beaconr.Options{
 		Scanner: scanner.Options{Registered: []string{fixture}},
 		PHPHandler: func(application app.App) (http.Handler, error) {
 			return pool.Handler(application.Path, application.Slug), nil
@@ -154,9 +154,9 @@ func assertPHPFixtureBehavior(t *testing.T, pool *phpfastcgi.Pool) {
 	httpServer := httptest.NewServer(server.Handler())
 	defer httpServer.Close()
 
-	get := requestPHPFixture(t, httpServer.Client(), http.MethodGet, httpServer.URL+"/php/?name=dropserve", "", nil)
-	if get.Get != "dropserve" {
-		t.Fatalf("GET value = %q, want dropserve", get.Get)
+	get := requestPHPFixture(t, httpServer.Client(), http.MethodGet, httpServer.URL+"/php/?name=beacon", "", nil)
+	if get.Get != "beacon" {
+		t.Fatalf("GET value = %q, want beacon", get.Get)
 	}
 
 	form := url.Values{"message": {"fastcgi post"}}
@@ -188,7 +188,7 @@ func assertPHPFixtureBehavior(t *testing.T, pool *phpfastcgi.Pool) {
 	}
 
 	fatalStatus, fatalBody := requestPHPFixtureRaw(t, httpServer.Client(), http.MethodGet, httpServer.URL+"/php/fatal.php", "", nil)
-	if fatalStatus != http.StatusInternalServerError || !strings.Contains(fatalBody, "Fatal error") || !strings.Contains(fatalBody, "undefined_dropserve_function") {
+	if fatalStatus != http.StatusInternalServerError || !strings.Contains(fatalBody, "Fatal error") || !strings.Contains(fatalBody, "undefined_beacon_function") {
 		t.Fatalf("fatal PHP response = %d %q, want readable 500 page", fatalStatus, fatalBody)
 	}
 	afterFatal := requestPHPFixture(t, httpServer.Client(), http.MethodGet, httpServer.URL+"/php/?name=pool-alive", "", nil)
@@ -198,7 +198,7 @@ func assertPHPFixtureBehavior(t *testing.T, pool *phpfastcgi.Pool) {
 }
 
 func TestPHPWorkerProcess(t *testing.T) {
-	if os.Getenv("DROPSERVE_TEST_PHP_WORKER") != "1" {
+	if os.Getenv("BEACON_TEST_PHP_WORKER") != "1" {
 		return
 	}
 	separator := -1
@@ -223,7 +223,7 @@ func TestPHPWorkerProcess(t *testing.T) {
 func servePHPFixture(response http.ResponseWriter, request *http.Request) {
 	if request.URL.Path == "/php/fatal.php" {
 		response.Header().Set("Content-Type", "text/html; charset=utf-8")
-		_, _ = io.WriteString(response, "<b>Fatal error</b>: Uncaught Error: Call to undefined function undefined_dropserve_function()\nStack trace:\n#0 {main}")
+		_, _ = io.WriteString(response, "<b>Fatal error</b>: Uncaught Error: Call to undefined function undefined_beacon_function()\nStack trace:\n#0 {main}")
 		return
 	}
 	pathInfo := strings.TrimPrefix(request.URL.Path, "/php/index.php")

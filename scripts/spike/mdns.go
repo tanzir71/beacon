@@ -26,13 +26,13 @@ func main() {
 	for _, iface := range interfaces {
 		fmt.Printf("multicast interface: %s (index %d)\n", iface.Name, iface.Index)
 	}
-	fmt.Printf("advertising: dropserve-spike.local. -> %v for %s\n", addresses, spikeDuration)
+	fmt.Printf("advertising: beacon-spike.local. -> %v for %s\n", addresses, spikeDuration)
 	server, err := zeroconf.RegisterProxy(
-		"Dropserve Spike",
+		"Beacon Spike",
 		"_http._tcp",
 		"local.",
 		8080,
-		"dropserve-spike.local.",
+		"beacon-spike.local.",
 		addresses,
 		[]string{"path=/", "spike=m7"},
 		interfaces,

@@ -64,7 +64,7 @@ func TestLandingPageUsesCurrentSigstoreBundleVerification(t *testing.T) {
 			t.Errorf("landing verification instructions are missing %q", marker)
 		}
 	}
-	for _, stale := range []string{"dropserve.sig", "install through <code>scoop</code>"} {
+	for _, stale := range []string{"beacon.sig", "install through <code>scoop</code>"} {
 		if strings.Contains(text, stale) {
 			t.Errorf("landing page still contains premature or stale claim %q", stale)
 		}

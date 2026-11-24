@@ -27,18 +27,18 @@ func (client *recordingClient) Do(request *gofast.Request) (*gofast.ResponsePipe
 
 func (*recordingClient) Close() error { return nil }
 
-func TestFastCGIParametersKeepDropservePrefix(t *testing.T) {
+func TestFastCGIParametersKeepBeaconPrefix(t *testing.T) {
 	documentRoot := t.TempDir()
 	request := httptest.NewRequestWithContext(
 		context.Background(),
 		http.MethodGet,
-		"http://dropserve.test/php/index.php/extra/path?name=dropserve",
+		"http://beacon.test/php/index.php/extra/path?name=beacon",
 		nil,
 	)
 	// The first-segment router removes /php before dispatch but deliberately
 	// preserves RequestURI so the FastCGI boundary can reconstruct public paths.
 	request.URL.Path = "/index.php/extra/path"
-	request.RequestURI = "/php/index.php/extra/path?name=dropserve"
+	request.RequestURI = "/php/index.php/extra/path?name=beacon"
 	client := &recordingClient{}
 	response, err := newSession(documentRoot, "php")(client, gofast.NewRequest(request))
 	if err != nil {
@@ -49,7 +49,7 @@ func TestFastCGIParametersKeepDropservePrefix(t *testing.T) {
 	want := map[string]string{
 		"SCRIPT_FILENAME": filepath.Join(documentRoot, "index.php"),
 		"DOCUMENT_ROOT":   documentRoot,
-		"REQUEST_URI":     "/php/index.php/extra/path?name=dropserve",
+		"REQUEST_URI":     "/php/index.php/extra/path?name=beacon",
 		"SCRIPT_NAME":     "/php/index.php",
 		"PATH_INFO":       "/extra/path",
 	}

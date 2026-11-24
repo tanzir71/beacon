@@ -11,11 +11,11 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/tanzir71/dropserve/internal/app"
+	"github.com/tanzir71/beacon/internal/app"
 )
 
 var reservedSlugs = map[string]struct{}{
-	"_dropserve":  {},
+	"_beacon":     {},
 	"api":         {},
 	"health":      {},
 	".well-known": {},
@@ -65,7 +65,7 @@ func Scan(options Options) (Result, error) {
 				Code: "sync_root",
 				Path: root,
 				Message: fmt.Sprintf(
-					"Apps folder %s is inside %s; use %%USERPROFILE%%\\Dropserve for the most reliable file updates",
+					"Apps folder %s is inside %s; use %%USERPROFILE%%\\Beacon for the most reliable file updates",
 					root,
 					provider,
 				),
@@ -76,7 +76,7 @@ func Scan(options Options) (Result, error) {
 			collector.result.Warnings = append(collector.result.Warnings, Warning{
 				Code:    "root_missing",
 				Path:    root,
-				Message: fmt.Sprintf("Create the Apps folder at %s and Dropserve will pick it up automatically", root),
+				Message: fmt.Sprintf("Create the Apps folder at %s and Beacon will pick it up automatically", root),
 			})
 			continue
 		}
@@ -134,7 +134,7 @@ func (collector *collector) add(root string, entry fs.DirEntry) error {
 		collector.result.Warnings = append(collector.result.Warnings, Warning{
 			Code:    "reserved_slug",
 			Path:    fullPath,
-			Message: fmt.Sprintf("Rename %q because Dropserve reserves that address for its own features", entry.Name()),
+			Message: fmt.Sprintf("Rename %q because Beacon reserves that address for its own features", entry.Name()),
 		})
 		return nil
 	}
@@ -142,7 +142,7 @@ func (collector *collector) add(root string, entry fs.DirEntry) error {
 		collector.result.Warnings = append(collector.result.Warnings, Warning{
 			Code:    "unsafe_name",
 			Path:    fullPath,
-			Message: fmt.Sprintf("Rename %q without a leading '..' before Dropserve can serve it", entry.Name()),
+			Message: fmt.Sprintf("Rename %q without a leading '..' before Beacon can serve it", entry.Name()),
 		})
 		return nil
 	}
@@ -158,7 +158,7 @@ func (collector *collector) add(root string, entry fs.DirEntry) error {
 		collector.result.Warnings = append(collector.result.Warnings, Warning{
 			Code:    "invalid_slug",
 			Path:    fullPath,
-			Message: fmt.Sprintf("Rename %q using letters or numbers before Dropserve can serve it", entry.Name()),
+			Message: fmt.Sprintf("Rename %q using letters or numbers before Beacon can serve it", entry.Name()),
 		})
 		return nil
 	}
@@ -166,7 +166,7 @@ func (collector *collector) add(root string, entry fs.DirEntry) error {
 		collector.result.Warnings = append(collector.result.Warnings, Warning{
 			Code:    "reserved_slug",
 			Path:    fullPath,
-			Message: fmt.Sprintf("Rename %q because Dropserve reserves that address for its own features", baseSlug),
+			Message: fmt.Sprintf("Rename %q because Beacon reserves that address for its own features", baseSlug),
 		})
 		return nil
 	}

@@ -5,7 +5,7 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
         self.end_headers()
-        self.wfile.write(b"Dropserve Python fixture")
+        self.wfile.write(b"Beacon Python fixture")
 
     def log_message(self, _format, *_args):
         return

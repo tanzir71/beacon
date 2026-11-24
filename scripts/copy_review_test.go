@@ -9,7 +9,7 @@ import (
 func TestPrimaryCopyFollowsTheVoiceRules(t *testing.T) {
 	t.Parallel()
 	files := map[string][]string{
-		"../cmd/dropserve/local_https.go": {
+		"../cmd/beacon/local_https.go": {
 			"local certificate authority",
 			"trust store",
 		},
@@ -19,7 +19,7 @@ func TestPrimaryCopyFollowsTheVoiceRules(t *testing.T) {
 			"several hundred MB",
 		},
 		"../internal/dashboard/assets/app.js": {
-			"Optional Dropserve runtime.",
+			"Optional Beacon runtime.",
 			"Not available on this platform",
 			"Click to copy connection string",
 			"HTTP ${response.status}",
@@ -40,7 +40,7 @@ func TestPrimaryCopyFollowsTheVoiceRules(t *testing.T) {
 		"../internal/php/pool.go": {"PHP runtime is not running"},
 		"../internal/runtimes/manager.go": {
 			"FastCGI worker pool",
-			"Optional Dropserve runtime.",
+			"Optional Beacon runtime.",
 		},
 		"../internal/scanner/scanner.go": {
 			"Apps root",
@@ -67,8 +67,8 @@ func TestPrimaryCopyFollowsTheVoiceRules(t *testing.T) {
 	}
 	for _, required := range []string{
 		"Removing the PHP pack deletes the downloaded PHP files. Your apps and their files are untouched.",
-		"Dropserve-managed database data. Your apps and their files are untouched.",
-		"Stopping trust makes browsers on this computer warn about Dropserve again. Local HTTPS, Dropserve's certificate files, and your apps are unchanged.",
+		"Beacon-managed database data. Your apps and their files are untouched.",
+		"Stopping trust makes browsers on this computer warn about Beacon again. Local HTTPS, Beacon's certificate files, and your apps are unchanged.",
 	} {
 		if !strings.Contains(string(dashboard), required) {
 			t.Errorf("destructive add-on copy no longer explains what remains: missing %q", required)
@@ -87,11 +87,11 @@ func TestPrimaryCopyFollowsTheVoiceRules(t *testing.T) {
 		t.Error("ordinary dashboard warning has no Dismiss action")
 	}
 
-	trustCommand, err := os.ReadFile("../cmd/dropserve/local_https.go") // #nosec G304 -- fixed checked-in CLI source.
+	trustCommand, err := os.ReadFile("../cmd/beacon/local_https.go") // #nosec G304 -- fixed checked-in CLI source.
 	if err != nil {
 		t.Fatalf("read trust command copy: %v", err)
 	}
-	if !strings.Contains(string(trustCommand), "Dropserve's certificate files and your apps are unchanged.") {
+	if !strings.Contains(string(trustCommand), "Beacon's certificate files and your apps are unchanged.") {
 		t.Error("trust removal copy does not explain what remains unchanged")
 	}
 }

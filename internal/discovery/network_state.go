@@ -50,7 +50,7 @@ func (manager *Manager) saveNetworkStateLocked() error {
 }
 
 func loadNetworkState(path string) (networkDiskState, error) {
-	// #nosec G304 -- path is the configured Dropserve machine-state path.
+	// #nosec G304 -- path is the configured Beacon machine-state path.
 	data, err := os.ReadFile(path)
 	if errors.Is(err, os.ErrNotExist) {
 		return networkDiskState{}, nil

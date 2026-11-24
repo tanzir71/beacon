@@ -11,20 +11,20 @@ import (
 	"github.com/smallstep/truststore"
 )
 
-// IsTrusted asks the operating system whether the exact persisted Dropserve
+// IsTrusted asks the operating system whether the exact persisted Beacon
 // root currently chains through its system trust roots. It performs no write.
 func IsTrusted(rootPath string) (bool, error) {
-	content, err := os.ReadFile(rootPath) // #nosec G304 -- caller supplies Dropserve's fixed root path.
+	content, err := os.ReadFile(rootPath) // #nosec G304 -- caller supplies Beacon's fixed root path.
 	if err != nil {
-		return false, fmt.Errorf("read Dropserve local root: %w", err)
+		return false, fmt.Errorf("read Beacon local root: %w", err)
 	}
 	block, _ := pem.Decode(content)
 	if block == nil || block.Type != "CERTIFICATE" {
-		return false, errors.New("dropserve local root is not a PEM certificate")
+		return false, errors.New("beacon local root is not a PEM certificate")
 	}
 	certificate, err := x509.ParseCertificate(block.Bytes)
 	if err != nil {
-		return false, fmt.Errorf("parse Dropserve local root: %w", err)
+		return false, fmt.Errorf("parse Beacon local root: %w", err)
 	}
 	roots, err := x509.SystemCertPool()
 	if err != nil {
@@ -65,7 +65,7 @@ func NewTrustController(rootPath string, store TrustStore) *TrustController {
 // Install explicitly adds the local root to this machine's trust store.
 func (controller *TrustController) Install() error {
 	if err := controller.store.InstallFile(controller.rootPath); err != nil {
-		return fmt.Errorf("install Dropserve local trust: %w", err)
+		return fmt.Errorf("install Beacon local trust: %w", err)
 	}
 	return nil
 }
@@ -73,7 +73,7 @@ func (controller *TrustController) Install() error {
 // Uninstall explicitly removes the local root from this machine's trust store.
 func (controller *TrustController) Uninstall() error {
 	if err := controller.store.UninstallFile(controller.rootPath); err != nil {
-		return fmt.Errorf("remove Dropserve local trust: %w", err)
+		return fmt.Errorf("remove Beacon local trust: %w", err)
 	}
 	return nil
 }

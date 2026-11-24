@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/tanzir71/dropserve/internal/indexer"
+	"github.com/tanzir71/beacon/internal/indexer"
 )
 
 func TestFolderRestartAndRescanActionsUseExplicitMutationBoundary(t *testing.T) {
@@ -37,11 +37,11 @@ func TestFolderRestartAndRescanActionsUseExplicitMutationBoundary(t *testing.T) 
 		path string
 		body string
 	}{
-		{path: "/_dropserve/api/open-folder", body: `{"slug":"field-notes"}`},
-		{path: "/_dropserve/api/apps/field-notes/restart", body: `{}`},
-		{path: "/_dropserve/api/rescan", body: `{}`},
+		{path: "/_beacon/api/open-folder", body: `{"slug":"field-notes"}`},
+		{path: "/_beacon/api/apps/field-notes/restart", body: `{}`},
+		{path: "/_beacon/api/rescan", body: `{}`},
 	} {
-		request := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "http://dropserve.test"+action.path, strings.NewReader(action.body))
+		request := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "http://beacon.test"+action.path, strings.NewReader(action.body))
 		authorizeTestMutation(request, dashboard.csrfToken)
 		response := httptest.NewRecorder()
 		dashboard.ServeHTTP(response, request)
@@ -72,7 +72,7 @@ func TestAppSettingsAndHiddenAppFiltering(t *testing.T) {
 	}
 	dashboard := httpHandler.(*handler)
 
-	request := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "http://dropserve.test/_dropserve/api/apps/field-notes/settings", strings.NewReader(`{"hidden":true}`))
+	request := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "http://beacon.test/_beacon/api/apps/field-notes/settings", strings.NewReader(`{"hidden":true}`))
 	authorizeTestMutation(request, dashboard.csrfToken)
 	response := httptest.NewRecorder()
 	dashboard.ServeHTTP(response, request)
@@ -87,11 +87,11 @@ func TestAppSettingsAndHiddenAppFiltering(t *testing.T) {
 		path string
 		want []string
 	}{
-		{path: "/_dropserve/api/apps", want: []string{"field-notes"}},
-		{path: "/_dropserve/api/apps?include_hidden=1", want: []string{"field-notes", "secret-notes"}},
-		{path: "/_dropserve/api/search?q=secret", want: []string{}},
+		{path: "/_beacon/api/apps", want: []string{"field-notes"}},
+		{path: "/_beacon/api/apps?include_hidden=1", want: []string{"field-notes", "secret-notes"}},
+		{path: "/_beacon/api/search?q=secret", want: []string{}},
 	} {
-		request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://dropserve.test"+test.path, nil)
+		request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://beacon.test"+test.path, nil)
 		response := httptest.NewRecorder()
 		dashboard.ServeHTTP(response, request)
 		if response.Code != http.StatusOK {
@@ -118,7 +118,7 @@ func TestAppDetailIncludesItsManifestWarnings(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://dropserve.test/_dropserve/api/apps/notes", nil)
+	request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://beacon.test/_beacon/api/apps/notes", nil)
 	response := httptest.NewRecorder()
 	httpHandler.ServeHTTP(response, request)
 	if response.Code != http.StatusOK || !strings.Contains(response.Body.String(), `unknown key \"future\"`) {

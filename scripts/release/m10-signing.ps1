@@ -5,7 +5,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$pfx = Join-Path ([System.IO.Path]::GetTempPath()) ("dropserve-signing-test-" + [Guid]::NewGuid().ToString('N') + '.pfx')
+$pfx = Join-Path ([System.IO.Path]::GetTempPath()) ("beacon-signing-test-" + [Guid]::NewGuid().ToString('N') + '.pfx')
 $password = [Guid]::NewGuid().ToString('N') + [Guid]::NewGuid().ToString('N')
 $thumbprint = ''
 

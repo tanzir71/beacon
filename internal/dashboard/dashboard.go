@@ -1,4 +1,4 @@
-// Package dashboard serves Dropserve's embedded, build-free web interface.
+// Package dashboard serves Beacon's embedded, build-free web interface.
 package dashboard
 
 import (
@@ -20,10 +20,10 @@ import (
 	"time"
 
 	qrcode "github.com/skip2/go-qrcode"
-	"github.com/tanzir71/dropserve/internal/discovery"
-	"github.com/tanzir71/dropserve/internal/indexer"
-	"github.com/tanzir71/dropserve/internal/sqlitebrowser"
-	"github.com/tanzir71/dropserve/internal/version"
+	"github.com/tanzir71/beacon/internal/discovery"
+	"github.com/tanzir71/beacon/internal/indexer"
+	"github.com/tanzir71/beacon/internal/sqlitebrowser"
+	"github.com/tanzir71/beacon/internal/version"
 )
 
 //go:embed assets/*
@@ -135,16 +135,16 @@ func NewWithOptions(applications []indexer.Entry, options Options) (http.Handler
 	}
 	title := strings.TrimSpace(options.Title)
 	if title == "" {
-		title = "Dropserve"
+		title = "Beacon"
 	}
 	theme := strings.ToLower(strings.TrimSpace(options.Theme))
 	if theme != "light" && theme != "dark" {
 		theme = "auto"
 	}
 	indexText := string(index)
-	indexText = strings.Replace(indexText, "<title>Dropserve</title>", "<title>"+html.EscapeString(title)+"</title>", 1)
-	indexText = strings.Replace(indexText, "<strong>Dropserve</strong>", "<strong>"+html.EscapeString(title)+"</strong>", 1)
-	indexText = strings.Replace(indexText, `data-dropserve-theme="auto"`, `data-dropserve-theme="`+theme+`"`, 1)
+	indexText = strings.Replace(indexText, "<title>Beacon</title>", "<title>"+html.EscapeString(title)+"</title>", 1)
+	indexText = strings.Replace(indexText, "<strong>Beacon</strong>", "<strong>"+html.EscapeString(title)+"</strong>", 1)
+	indexText = strings.Replace(indexText, `data-beacon-theme="auto"`, `data-beacon-theme="`+theme+`"`, 1)
 	index = []byte(indexText)
 	return &handler{
 		index:                index,
@@ -184,43 +184,43 @@ func cloneAppWarnings(source map[string][]string) map[string][]string {
 }
 
 func (dashboard *handler) ServeHTTP(response http.ResponseWriter, request *http.Request) {
-	if request.Method == http.MethodPost && strings.HasPrefix(request.URL.Path, "/_dropserve/api/apps/") && strings.HasSuffix(request.URL.Path, "/settings") {
+	if request.Method == http.MethodPost && strings.HasPrefix(request.URL.Path, "/_beacon/api/apps/") && strings.HasSuffix(request.URL.Path, "/settings") {
 		dashboard.serveAppSettings(response, request)
 		return
 	}
-	if request.Method == http.MethodPost && request.URL.Path == "/_dropserve/api/open-folder" {
+	if request.Method == http.MethodPost && request.URL.Path == "/_beacon/api/open-folder" {
 		dashboard.serveOpenFolder(response, request)
 		return
 	}
-	if request.Method == http.MethodPost && request.URL.Path == "/_dropserve/api/rescan" {
+	if request.Method == http.MethodPost && request.URL.Path == "/_beacon/api/rescan" {
 		dashboard.serveRescan(response, request)
 		return
 	}
-	if request.Method == http.MethodPost && strings.HasPrefix(request.URL.Path, "/_dropserve/api/apps/") && strings.HasSuffix(request.URL.Path, "/restart") {
+	if request.Method == http.MethodPost && strings.HasPrefix(request.URL.Path, "/_beacon/api/apps/") && strings.HasSuffix(request.URL.Path, "/restart") {
 		dashboard.serveAppRestart(response, request)
 		return
 	}
-	if request.Method == http.MethodPost && strings.HasPrefix(request.URL.Path, "/_dropserve/api/addons/") {
+	if request.Method == http.MethodPost && strings.HasPrefix(request.URL.Path, "/_beacon/api/addons/") {
 		dashboard.serveAddonChange(response, request)
 		return
 	}
-	if request.Method == http.MethodPost && strings.HasPrefix(request.URL.Path, "/_dropserve/api/sharing/funnel/") {
+	if request.Method == http.MethodPost && strings.HasPrefix(request.URL.Path, "/_beacon/api/sharing/funnel/") {
 		dashboard.serveFunnelChange(response, request)
 		return
 	}
-	if request.Method == http.MethodPost && request.URL.Path == "/_dropserve/api/sharing/tailscale" {
+	if request.Method == http.MethodPost && request.URL.Path == "/_beacon/api/sharing/tailscale" {
 		dashboard.serveTailscaleServeChange(response, request)
 		return
 	}
-	if request.Method == http.MethodPost && request.URL.Path == "/_dropserve/api/https" {
+	if request.Method == http.MethodPost && request.URL.Path == "/_beacon/api/https" {
 		dashboard.serveLocalHTTPSChange(response, request)
 		return
 	}
-	if request.Method == http.MethodPost && request.URL.Path == "/_dropserve/api/trust" {
+	if request.Method == http.MethodPost && request.URL.Path == "/_beacon/api/trust" {
 		dashboard.serveLocalTrustChange(response, request)
 		return
 	}
-	if request.Method == http.MethodPost && request.URL.Path == "/_dropserve/api/network-change/dismiss" {
+	if request.Method == http.MethodPost && request.URL.Path == "/_beacon/api/network-change/dismiss" {
 		dashboard.serveNetworkChangeDismiss(response, request)
 		return
 	}
@@ -232,56 +232,56 @@ func (dashboard *handler) ServeHTTP(response http.ResponseWriter, request *http.
 
 	var content []byte
 	switch request.URL.Path {
-	case "/", "/_dropserve/":
+	case "/", "/_beacon/":
 		response.Header().Set("Content-Type", "text/html; charset=utf-8")
 		response.Header().Set("Cache-Control", "no-store")
 		content = dashboard.index
-	case "/_dropserve/app.css":
+	case "/_beacon/app.css":
 		response.Header().Set("Content-Type", "text/css; charset=utf-8")
 		response.Header().Set("Cache-Control", "public, max-age=300")
 		content = dashboard.stylesheet
-	case "/_dropserve/app.js":
+	case "/_beacon/app.js":
 		response.Header().Set("Content-Type", "text/javascript; charset=utf-8")
 		response.Header().Set("Cache-Control", "public, max-age=300")
 		content = dashboard.script
-	case "/_dropserve/help/dhcp-reservation":
+	case "/_beacon/help/dhcp-reservation":
 		response.Header().Set("Content-Type", "text/html; charset=utf-8")
 		response.Header().Set("Cache-Control", "public, max-age=3600")
 		content = dashboard.dhcpHelp
-	case "/_dropserve/api/apps":
+	case "/_beacon/api/apps":
 		dashboard.serveJSON(response, request, dashboard.visibleApps(request.URL.Query().Get("include_hidden") == "1"))
 		return
-	case "/_dropserve/api/search":
+	case "/_beacon/api/search":
 		dashboard.serveJSON(response, request, indexer.Search(dashboard.visibleApps(false), request.URL.Query().Get("q")))
 		return
-	case "/_dropserve/api/urls":
+	case "/_beacon/api/urls":
 		dashboard.serveAdvertisedURLs(response, request)
 		return
-	case "/_dropserve/api/qr":
+	case "/_beacon/api/qr":
 		dashboard.serveQR(response, request)
 		return
-	case "/_dropserve/api/status":
+	case "/_beacon/api/status":
 		dashboard.serveStatus(response, request)
 		return
-	case "/_dropserve/api/addons":
+	case "/_beacon/api/addons":
 		if dashboard.addons == nil {
 			dashboard.serveJSON(response, request, []AddonStatus{})
 		} else {
 			dashboard.serveJSON(response, request, dashboard.addons())
 		}
 		return
-	case "/_dropserve/api/https/root.pem":
+	case "/_beacon/api/https/root.pem":
 		dashboard.serveRootCertificate(response, request)
 		return
-	case "/_dropserve/healthz":
+	case "/_beacon/healthz":
 		dashboard.serveHealth(response, request)
 		return
 	default:
-		if strings.HasPrefix(request.URL.Path, "/_dropserve/api/databases/") {
+		if strings.HasPrefix(request.URL.Path, "/_beacon/api/databases/") {
 			dashboard.serveDatabase(response, request)
 			return
 		}
-		if strings.HasPrefix(request.URL.Path, "/_dropserve/api/apps/") {
+		if strings.HasPrefix(request.URL.Path, "/_beacon/api/apps/") {
 			dashboard.serveAppDetail(response, request)
 			return
 		}
@@ -302,7 +302,7 @@ func (dashboard *handler) ServeHTTP(response http.ResponseWriter, request *http.
 }
 
 func (dashboard *handler) authorizeMutation(response http.ResponseWriter, request *http.Request) bool {
-	if request.Header.Get("X-Dropserve-CSRF") != dashboard.csrfToken {
+	if request.Header.Get("X-Beacon-CSRF") != dashboard.csrfToken {
 		http.Error(response, "Refresh the dashboard and try again.", http.StatusForbidden)
 		return false
 	}
@@ -312,7 +312,7 @@ func (dashboard *handler) authorizeMutation(response http.ResponseWriter, reques
 		scheme = "https"
 	}
 	if err != nil || origin.Scheme != scheme || !strings.EqualFold(origin.Host, request.Host) {
-		http.Error(response, "This change must come from the open Dropserve dashboard or local CLI.", http.StatusForbidden)
+		http.Error(response, "This change must come from the open Beacon dashboard or local CLI.", http.StatusForbidden)
 		return false
 	}
 	return true
@@ -339,7 +339,7 @@ func (dashboard *handler) serveOpenFolder(response http.ResponseWriter, request 
 		return
 	}
 	if err := dashboard.openFolder(request.Context(), payload.Slug); err != nil {
-		http.Error(response, "Dropserve could not open this folder: "+err.Error(), http.StatusInternalServerError)
+		http.Error(response, "Beacon could not open this folder: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 	response.WriteHeader(http.StatusNoContent)
@@ -354,7 +354,7 @@ func (dashboard *handler) serveRescan(response http.ResponseWriter, request *htt
 		return
 	}
 	if err := dashboard.rescan(); err != nil {
-		http.Error(response, "Dropserve could not rescan your apps: "+err.Error(), http.StatusInternalServerError)
+		http.Error(response, "Beacon could not rescan your apps: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 	response.WriteHeader(http.StatusNoContent)
@@ -364,7 +364,7 @@ func (dashboard *handler) serveAppSettings(response http.ResponseWriter, request
 	if !dashboard.authorizeMutation(response, request) {
 		return
 	}
-	slug := strings.TrimSuffix(strings.TrimPrefix(request.URL.Path, "/_dropserve/api/apps/"), "/settings")
+	slug := strings.TrimSuffix(strings.TrimPrefix(request.URL.Path, "/_beacon/api/apps/"), "/settings")
 	if slug == "" || strings.Contains(slug, "/") || !dashboard.hasApp(slug) {
 		http.NotFound(response, request)
 		return
@@ -380,7 +380,7 @@ func (dashboard *handler) serveAppSettings(response http.ResponseWriter, request
 		return
 	}
 	if err := dashboard.changeAppSettings(request.Context(), slug, change); err != nil {
-		http.Error(response, "Dropserve could not save this app setting: "+err.Error(), http.StatusInternalServerError)
+		http.Error(response, "Beacon could not save this app setting: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 	response.WriteHeader(http.StatusNoContent)
@@ -390,7 +390,7 @@ func (dashboard *handler) serveAppRestart(response http.ResponseWriter, request 
 	if !dashboard.authorizeMutation(response, request) {
 		return
 	}
-	slug := strings.TrimSuffix(strings.TrimPrefix(request.URL.Path, "/_dropserve/api/apps/"), "/restart")
+	slug := strings.TrimSuffix(strings.TrimPrefix(request.URL.Path, "/_beacon/api/apps/"), "/restart")
 	if slug == "" || strings.Contains(slug, "/") || !dashboard.hasApp(slug) {
 		http.NotFound(response, request)
 		return
@@ -400,7 +400,7 @@ func (dashboard *handler) serveAppRestart(response http.ResponseWriter, request 
 		return
 	}
 	if err := dashboard.restartApp(request.Context(), slug); err != nil {
-		http.Error(response, "Dropserve could not restart this app: "+err.Error(), http.StatusBadGateway)
+		http.Error(response, "Beacon could not restart this app: "+err.Error(), http.StatusBadGateway)
 		return
 	}
 	response.WriteHeader(http.StatusNoContent)
@@ -423,7 +423,7 @@ func (dashboard *handler) serveAddonChange(response http.ResponseWriter, request
 	if !dashboard.authorizeMutation(response, request) {
 		return
 	}
-	name := strings.TrimPrefix(request.URL.Path, "/_dropserve/api/addons/")
+	name := strings.TrimPrefix(request.URL.Path, "/_beacon/api/addons/")
 	if name == "" || strings.Contains(name, "/") {
 		http.NotFound(response, request)
 		return
@@ -447,14 +447,14 @@ func (dashboard *handler) serveAddonChange(response http.ResponseWriter, request
 		return
 	}
 	if err := dashboard.changeAddon(request.Context(), name, payload.Action); err != nil {
-		http.Error(response, "Dropserve could not change this add-on: "+err.Error(), http.StatusBadGateway)
+		http.Error(response, "Beacon could not change this add-on: "+err.Error(), http.StatusBadGateway)
 		return
 	}
 	response.WriteHeader(http.StatusNoContent)
 }
 
 func (dashboard *handler) serveDatabase(response http.ResponseWriter, request *http.Request) {
-	slug := strings.TrimPrefix(request.URL.Path, "/_dropserve/api/databases/")
+	slug := strings.TrimPrefix(request.URL.Path, "/_beacon/api/databases/")
 	if slug == "" || strings.Contains(slug, "/") {
 		http.NotFound(response, request)
 		return
@@ -483,7 +483,7 @@ func (dashboard *handler) serveDatabase(response http.ResponseWriter, request *h
 	}
 	snapshot, err := dashboard.browseDatabase(request.Context(), slug, file)
 	if err != nil {
-		http.Error(response, "Dropserve could not read this database: "+err.Error(), http.StatusUnprocessableEntity)
+		http.Error(response, "Beacon could not read this database: "+err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 	snapshot.Path = file
@@ -507,7 +507,7 @@ func (dashboard *handler) serveLocalHTTPSChange(response http.ResponseWriter, re
 		return
 	}
 	if err := dashboard.setLocalHTTPS(request.Context(), *payload.Enabled); err != nil {
-		http.Error(response, "Dropserve could not change local HTTPS: "+err.Error(), http.StatusBadGateway)
+		http.Error(response, "Beacon could not change local HTTPS: "+err.Error(), http.StatusBadGateway)
 		return
 	}
 	response.WriteHeader(http.StatusNoContent)
@@ -530,7 +530,7 @@ func (dashboard *handler) serveLocalTrustChange(response http.ResponseWriter, re
 		return
 	}
 	if err := dashboard.setLocalTrust(*payload.Installed); err != nil {
-		http.Error(response, "Dropserve could not change local certificate trust: "+err.Error(), http.StatusBadGateway)
+		http.Error(response, "Beacon could not change local certificate trust: "+err.Error(), http.StatusBadGateway)
 		return
 	}
 	response.WriteHeader(http.StatusNoContent)
@@ -547,7 +547,7 @@ func (dashboard *handler) serveRootCertificate(response http.ResponseWriter, req
 		return
 	}
 	response.Header().Set("Content-Type", "application/x-pem-file")
-	response.Header().Set("Content-Disposition", `attachment; filename="dropserve-local-ca.pem"`)
+	response.Header().Set("Content-Disposition", `attachment; filename="beacon-local-ca.pem"`)
 	response.Header().Set("X-Content-Type-Options", "nosniff")
 	response.Header().Set("Content-Length", strconv.Itoa(len(content)))
 	response.WriteHeader(http.StatusOK)
@@ -565,7 +565,7 @@ func (dashboard *handler) serveNetworkChangeDismiss(response http.ResponseWriter
 		return
 	}
 	if err := dashboard.dismissNetworkChange(); err != nil {
-		http.Error(response, "Dropserve could not dismiss this notice.", http.StatusInternalServerError)
+		http.Error(response, "Beacon could not dismiss this notice.", http.StatusInternalServerError)
 		return
 	}
 	response.WriteHeader(http.StatusNoContent)
@@ -575,7 +575,7 @@ func (dashboard *handler) serveFunnelChange(response http.ResponseWriter, reques
 	if !dashboard.authorizeMutation(response, request) {
 		return
 	}
-	slug := strings.TrimPrefix(request.URL.Path, "/_dropserve/api/sharing/funnel/")
+	slug := strings.TrimPrefix(request.URL.Path, "/_beacon/api/sharing/funnel/")
 	if slug == "" || strings.Contains(slug, "/") || !dashboard.hasApp(slug) {
 		http.NotFound(response, request)
 		return
@@ -596,7 +596,7 @@ func (dashboard *handler) serveFunnelChange(response http.ResponseWriter, reques
 	}
 	if payload.Enabled != nil && !*payload.Enabled {
 		if err := dashboard.funnel.Disable(request.Context(), slug); err != nil {
-			http.Error(response, "Dropserve could not stop public sharing. Try again.", http.StatusBadGateway)
+			http.Error(response, "Beacon could not stop public sharing. Try again.", http.StatusBadGateway)
 			return
 		}
 		response.WriteHeader(http.StatusNoContent)
@@ -607,7 +607,7 @@ func (dashboard *handler) serveFunnelChange(response http.ResponseWriter, reques
 			http.Error(response, err.Error(), http.StatusBadRequest)
 			return
 		}
-		http.Error(response, "Dropserve could not start public sharing. Check Tailscale and try again.", http.StatusBadGateway)
+		http.Error(response, "Beacon could not start public sharing. Check Tailscale and try again.", http.StatusBadGateway)
 		return
 	}
 	response.WriteHeader(http.StatusNoContent)
@@ -630,7 +630,7 @@ func (dashboard *handler) serveTailscaleServeChange(response http.ResponseWriter
 		return
 	}
 	if err := dashboard.setTailscaleServe(request.Context(), *payload.Enabled); err != nil {
-		http.Error(response, "Dropserve could not change tailnet HTTPS: "+err.Error(), http.StatusBadGateway)
+		http.Error(response, "Beacon could not change tailnet HTTPS: "+err.Error(), http.StatusBadGateway)
 		return
 	}
 	response.WriteHeader(http.StatusNoContent)
@@ -766,7 +766,7 @@ func requestHTTPPort(request *http.Request) int {
 }
 
 func (dashboard *handler) serveAppDetail(response http.ResponseWriter, request *http.Request) {
-	slug := strings.TrimPrefix(request.URL.Path, "/_dropserve/api/apps/")
+	slug := strings.TrimPrefix(request.URL.Path, "/_beacon/api/apps/")
 	if slug == "" || strings.Contains(slug, "/") {
 		http.NotFound(response, request)
 		return
@@ -835,7 +835,7 @@ func (dashboard *handler) serveQR(response http.ResponseWriter, request *http.Re
 	}
 	content, err := qrcode.Encode(target, qrcode.Medium, 256)
 	if err != nil {
-		http.Error(response, "Dropserve could not create that QR code.", http.StatusInternalServerError)
+		http.Error(response, "Beacon could not create that QR code.", http.StatusInternalServerError)
 		return
 	}
 	response.Header().Set("Content-Type", "image/png")
@@ -852,7 +852,7 @@ func (dashboard *handler) serveQR(response http.ResponseWriter, request *http.Re
 func (dashboard *handler) serveJSON(response http.ResponseWriter, request *http.Request, value any) {
 	content, err := json.Marshal(value)
 	if err != nil {
-		http.Error(response, "Dropserve could not encode its app index.", http.StatusInternalServerError)
+		http.Error(response, "Beacon could not encode its app index.", http.StatusInternalServerError)
 		return
 	}
 	response.Header().Set("Content-Type", "application/json; charset=utf-8")

@@ -17,12 +17,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/tanzir71/dropserve/internal/config"
-	"github.com/tanzir71/dropserve/internal/state"
+	"github.com/tanzir71/beacon/internal/config"
+	"github.com/tanzir71/beacon/internal/state"
 )
 
 // ExampleDirectory is the app folder created during successful setup.
-const ExampleDirectory = "Welcome to Dropserve"
+const ExampleDirectory = "Welcome to Beacon"
 
 //go:embed assets/wizard.html assets/example/index.html
 var assets embed.FS
@@ -98,18 +98,18 @@ func Run(ctx context.Context, options Options) (Result, error) {
 		}
 		appsRoot := strings.TrimSpace(request.FormValue("apps_root"))
 		if appsRoot == "" {
-			renderWizard(response, options.DefaultAppsRoot, "Choose where Dropserve should keep your apps.")
+			renderWizard(response, options.DefaultAppsRoot, "Choose where Beacon should keep your apps.")
 			return
 		}
 		absoluteRoot, err := filepath.Abs(appsRoot)
 		if err != nil {
-			renderWizard(response, appsRoot, "Dropserve could not understand that folder. Choose another location.")
+			renderWizard(response, appsRoot, "Beacon could not understand that folder. Choose another location.")
 			return
 		}
 		startAtLogin := request.FormValue("autostart") == "on"
 		initialized, err := complete(options, absoluteRoot, startAtLogin)
 		if err != nil {
-			renderWizard(response, absoluteRoot, fmt.Sprintf("Dropserve could not finish setup: %v", err))
+			renderWizard(response, absoluteRoot, fmt.Sprintf("Beacon could not finish setup: %v", err))
 			return
 		}
 		if !initialized {
@@ -245,7 +245,7 @@ func renderWizard(response http.ResponseWriter, appsRoot, message string) {
 		AppsRoot string
 		Message  string
 	}{AppsRoot: appsRoot, Message: message}); err != nil {
-		http.Error(response, "Dropserve could not draw the setup screen.", http.StatusInternalServerError)
+		http.Error(response, "Beacon could not draw the setup screen.", http.StatusInternalServerError)
 	}
 }
 
@@ -256,4 +256,4 @@ func writeSetupComplete(response http.ResponseWriter) {
 	_ = http.NewResponseController(response).Flush()
 }
 
-const setupCompletePage = `<!doctype html><html lang="en"><meta charset="utf-8"><title>Dropserve is starting</title><body><h1>Dropserve is starting</h1><p>Your dashboard will open in a moment. You can close this tab.</p></body></html>`
+const setupCompletePage = `<!doctype html><html lang="en"><meta charset="utf-8"><title>Beacon is starting</title><body><h1>Beacon is starting</h1><p>Your dashboard will open in a moment. You can close this tab.</p></body></html>`

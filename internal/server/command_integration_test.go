@@ -15,9 +15,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/tanzir71/dropserve/internal/scanner"
-	dropserver "github.com/tanzir71/dropserve/internal/server"
-	"github.com/tanzir71/dropserve/internal/supervisor"
+	"github.com/tanzir71/beacon/internal/scanner"
+	beaconr "github.com/tanzir71/beacon/internal/server"
+	"github.com/tanzir71/beacon/internal/supervisor"
 )
 
 func TestNodeFixtureIsDetectedStartedHealthyAndProxied(t *testing.T) {
@@ -33,7 +33,7 @@ func TestNodeFixtureIsDetectedStartedHealthyAndProxied(t *testing.T) {
 	if err != nil {
 		t.Fatalf("resolve fixtures: %v", err)
 	}
-	server, err := dropserver.New(scanner.Options{Registered: []string{fixture}})
+	server, err := beaconr.New(scanner.Options{Registered: []string{fixture}})
 	if err != nil {
 		t.Fatalf("create command-app server: %v", err)
 	}
@@ -78,14 +78,14 @@ func TestNodeFixtureIsDetectedStartedHealthyAndProxied(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read node fixture response: %v", err)
 	}
-	if response.StatusCode != http.StatusOK || string(body) != "Dropserve Node fixture" {
+	if response.StatusCode != http.StatusOK || string(body) != "Beacon Node fixture" {
 		t.Fatalf("node response = %d %q", response.StatusCode, body)
 	}
 
 	detailRequest, err := http.NewRequestWithContext(
 		context.Background(),
 		http.MethodGet,
-		httpServer.URL+"/_dropserve/api/apps/node",
+		httpServer.URL+"/_beacon/api/apps/node",
 		nil,
 	)
 	if err != nil {
@@ -125,7 +125,7 @@ func TestSlowCommandAppPublishesAStartingCardWithoutBlockingTheDashboard(t *test
 	}
 
 	startedAt := time.Now()
-	server, err := dropserver.NewWithOptions(dropserver.Options{
+	server, err := beaconr.NewWithOptions(beaconr.Options{
 		Scanner:           scanner.Options{Registered: []string{root}},
 		AsyncCommandStart: true,
 	})
@@ -182,7 +182,7 @@ func TestCommandAppCanBeExplicitlyRestarted(t *testing.T) {
 	if err != nil {
 		t.Fatalf("resolve node fixture: %v", err)
 	}
-	server, err := dropserver.New(scanner.Options{Registered: []string{fixture}})
+	server, err := beaconr.New(scanner.Options{Registered: []string{fixture}})
 	if err != nil {
 		t.Fatalf("create command-app server: %v", err)
 	}
@@ -191,7 +191,7 @@ func TestCommandAppCanBeExplicitlyRestarted(t *testing.T) {
 	defer httpServer.Close()
 
 	_, oldPID := requestCommandApp(t, httpServer.Client(), httpServer.URL+"/node/pid")
-	statusRequest, err := http.NewRequestWithContext(context.Background(), http.MethodGet, httpServer.URL+"/_dropserve/api/status", nil)
+	statusRequest, err := http.NewRequestWithContext(context.Background(), http.MethodGet, httpServer.URL+"/_beacon/api/status", nil)
 	if err != nil {
 		t.Fatalf("create status request: %v", err)
 	}
@@ -208,11 +208,11 @@ func TestCommandAppCanBeExplicitlyRestarted(t *testing.T) {
 	}
 	_ = statusResponse.Body.Close()
 
-	restartRequest, err := http.NewRequestWithContext(context.Background(), http.MethodPost, httpServer.URL+"/_dropserve/api/apps/node/restart", nil)
+	restartRequest, err := http.NewRequestWithContext(context.Background(), http.MethodPost, httpServer.URL+"/_beacon/api/apps/node/restart", nil)
 	if err != nil {
 		t.Fatalf("create restart request: %v", err)
 	}
-	restartRequest.Header.Set("X-Dropserve-CSRF", dashboardStatus.CSRFToken)
+	restartRequest.Header.Set("X-Beacon-CSRF", dashboardStatus.CSRFToken)
 	restartRequest.Header.Set("Origin", httpServer.URL)
 	restartResponse, err := httpServer.Client().Do(restartRequest)
 	if err != nil {
@@ -238,7 +238,7 @@ func TestPythonFixtureIsDetectedStartedHealthyAndProxied(t *testing.T) {
 	if err != nil {
 		t.Fatalf("resolve Python fixture: %v", err)
 	}
-	server, err := dropserver.New(scanner.Options{Registered: []string{fixture}})
+	server, err := beaconr.New(scanner.Options{Registered: []string{fixture}})
 	if err != nil {
 		t.Fatalf("create Python app server: %v", err)
 	}
@@ -255,10 +255,10 @@ func TestPythonFixtureIsDetectedStartedHealthyAndProxied(t *testing.T) {
 	httpServer := httptest.NewServer(server.Handler())
 	defer httpServer.Close()
 	status, body := requestCommandApp(t, httpServer.Client(), httpServer.URL+"/python/")
-	if status != http.StatusOK || body != "Dropserve Python fixture" {
+	if status != http.StatusOK || body != "Beacon Python fixture" {
 		t.Fatalf("Python response = %d %q", status, body)
 	}
-	detection := requestDetectionReason(t, httpServer.Client(), httpServer.URL+"/_dropserve/api/apps/python")
+	detection := requestDetectionReason(t, httpServer.Client(), httpServer.URL+"/_beacon/api/apps/python")
 	if detection != "Python app from server.py" {
 		t.Fatalf("Python detection reason = %q", detection)
 	}
@@ -277,7 +277,7 @@ func TestImmediateFailureRestartsFiveTimesThenCrashes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("resolve broken fixture: %v", err)
 	}
-	server, err := dropserver.NewWithOptions(dropserver.Options{
+	server, err := beaconr.NewWithOptions(beaconr.Options{
 		Scanner: scanner.Options{Registered: []string{fixture}},
 		Supervisor: supervisor.Options{
 			RestartDelays: []time.Duration{10 * time.Millisecond},
@@ -297,7 +297,7 @@ func TestImmediateFailureRestartsFiveTimesThenCrashes(t *testing.T) {
 	request, err := http.NewRequestWithContext(
 		context.Background(),
 		http.MethodGet,
-		httpServer.URL+"/_dropserve/api/logs/broken",
+		httpServer.URL+"/_beacon/api/logs/broken",
 		nil,
 	)
 	if err != nil {
@@ -324,7 +324,7 @@ func TestImmediateFailureRestartsFiveTimesThenCrashes(t *testing.T) {
 	if !strings.Contains(snapshot.Logs, "intentional fixture failure") {
 		t.Fatalf("crashed logs do not contain fixture error: %q", snapshot.Logs)
 	}
-	streamRequest, err := http.NewRequestWithContext(context.Background(), http.MethodGet, httpServer.URL+"/_dropserve/api/logs/broken", nil)
+	streamRequest, err := http.NewRequestWithContext(context.Background(), http.MethodGet, httpServer.URL+"/_beacon/api/logs/broken", nil)
 	if err != nil {
 		t.Fatalf("create live-log request: %v", err)
 	}
@@ -344,7 +344,7 @@ func TestImmediateFailureRestartsFiveTimesThenCrashes(t *testing.T) {
 	detailRequest, err := http.NewRequestWithContext(
 		context.Background(),
 		http.MethodGet,
-		httpServer.URL+"/_dropserve/api/apps/broken",
+		httpServer.URL+"/_beacon/api/apps/broken",
 		nil,
 	)
 	if err != nil {
@@ -381,7 +381,7 @@ func TestOneBrokenAppDoesNotAffectOthers(t *testing.T) {
 	if err != nil {
 		t.Fatalf("resolve fixture root: %v", err)
 	}
-	server, err := dropserver.NewWithOptions(dropserver.Options{
+	server, err := beaconr.NewWithOptions(beaconr.Options{
 		Scanner: scanner.Options{Registered: []string{
 			filepath.Join(fixtureRoot, "broken"),
 			filepath.Join(fixtureRoot, "node"),
@@ -402,11 +402,11 @@ func TestOneBrokenAppDoesNotAffectOthers(t *testing.T) {
 	defer httpServer.Close()
 
 	dashboardStatus, dashboardBody := requestCommandApp(t, httpServer.Client(), httpServer.URL+"/")
-	if dashboardStatus != http.StatusOK || !strings.Contains(dashboardBody, "Dropserve") {
+	if dashboardStatus != http.StatusOK || !strings.Contains(dashboardBody, "Beacon") {
 		t.Fatalf("dashboard with crashed app = %d %q", dashboardStatus, dashboardBody)
 	}
 	healthyStatus, healthyBody := requestCommandApp(t, httpServer.Client(), httpServer.URL+"/node/")
-	if healthyStatus != http.StatusOK || healthyBody != "Dropserve Node fixture" {
+	if healthyStatus != http.StatusOK || healthyBody != "Beacon Node fixture" {
 		t.Fatalf("healthy app beside crashed app = %d %q", healthyStatus, healthyBody)
 	}
 }
@@ -424,7 +424,7 @@ func TestShutdownLeavesNoCommandChild(t *testing.T) {
 	if err != nil {
 		t.Fatalf("resolve Node fixture: %v", err)
 	}
-	server, err := dropserver.New(scanner.Options{Registered: []string{fixture}})
+	server, err := beaconr.New(scanner.Options{Registered: []string{fixture}})
 	if err != nil {
 		t.Fatalf("create shutdown-test server: %v", err)
 	}
@@ -470,7 +470,7 @@ func TestShutdownLeavesNoCommandChild(t *testing.T) {
 			return
 		}
 		if time.Now().After(deadline) {
-			t.Fatalf("child PID %d survived Dropserve shutdown for five seconds", childPID)
+			t.Fatalf("child PID %d survived Beacon shutdown for five seconds", childPID)
 		}
 		time.Sleep(50 * time.Millisecond)
 	}
@@ -483,7 +483,7 @@ func TestMissingRuntimeMountsFriendlyNeedsRuntimePage(t *testing.T) {
 	if err != nil {
 		t.Fatalf("resolve Node fixture: %v", err)
 	}
-	server, err := dropserver.NewWithOptions(dropserver.Options{
+	server, err := beaconr.NewWithOptions(beaconr.Options{
 		Scanner: scanner.Options{Registered: []string{fixture}},
 		Supervisor: supervisor.Options{
 			RestartDelays: []time.Duration{10 * time.Millisecond},
@@ -542,7 +542,7 @@ http.createServer((_request, response) => response.end("lazy fixture ready"))
 		}
 	}
 	marker := filepath.Join(appRoot, "started")
-	server, err := dropserver.New(scanner.Options{Registered: []string{appRoot}})
+	server, err := beaconr.New(scanner.Options{Registered: []string{appRoot}})
 	if err != nil {
 		t.Fatalf("create lazy-start server: %v", err)
 	}
@@ -605,7 +605,7 @@ if (run === 1) setTimeout(() => {
 			t.Fatalf("write restart fixture %s: %v", name, err)
 		}
 	}
-	server, err := dropserver.NewWithOptions(dropserver.Options{
+	server, err := beaconr.NewWithOptions(beaconr.Options{
 		Scanner: scanner.Options{Registered: []string{appRoot}},
 		Supervisor: supervisor.Options{
 			RestartDelays: []time.Duration{10 * time.Millisecond},

@@ -11,8 +11,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/tanzir71/dropserve/internal/app"
-	staticserver "github.com/tanzir71/dropserve/internal/static"
+	"github.com/tanzir71/beacon/internal/app"
+	staticserver "github.com/tanzir71/beacon/internal/static"
 )
 
 func TestStaticFileValidatorsAndRange(t *testing.T) {
@@ -93,14 +93,14 @@ func TestSPAManifestFallsBackToIndexForUnmatchedSafePaths(t *testing.T) {
 	}
 	handler := staticserver.New(app.App{Path: root, Index: "index.html", SPA: true})
 
-	request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://dropserve.test/client/route", nil)
+	request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://beacon.test/client/route", nil)
 	response := httptest.NewRecorder()
 	handler.ServeHTTP(response, request)
 	if response.Code != http.StatusOK || response.Body.String() != string(index) {
 		t.Fatalf("SPA fallback = %d %q", response.Code, response.Body.String())
 	}
 
-	request = httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://dropserve.test/..%2fsecret", nil)
+	request = httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://beacon.test/..%2fsecret", nil)
 	response = httptest.NewRecorder()
 	handler.ServeHTTP(response, request)
 	if response.Code != http.StatusNotFound {
@@ -123,7 +123,7 @@ func serveStaticRequest(
 ) staticResponse {
 	t.Helper()
 
-	request := httptest.NewRequestWithContext(context.Background(), method, "http://dropserve.test"+path, nil)
+	request := httptest.NewRequestWithContext(context.Background(), method, "http://beacon.test"+path, nil)
 	for name, value := range headers {
 		request.Header.Set(name, value)
 	}

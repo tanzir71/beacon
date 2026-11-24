@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/tanzir71/dropserve/internal/supervisor"
+	"github.com/tanzir71/beacon/internal/supervisor"
 )
 
 func TestConnectionLimitWaiterUnblocksWhenListenerCloses(t *testing.T) {
@@ -41,7 +41,7 @@ func TestConnectionLimitWaiterUnblocksWhenListenerCloses(t *testing.T) {
 func TestLiveLogStreamHasBoundedClientCount(t *testing.T) {
 	server := &Server{logClients: make(chan struct{}, 1)}
 	server.logClients <- struct{}{}
-	request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://dropserve.test/_dropserve/api/logs/app", nil)
+	request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://beacon.test/_beacon/api/logs/app", nil)
 	response := httptest.NewRecorder()
 	server.streamCommandLogs(response, request, "app", supervisor.Snapshot{})
 	if response.Code != http.StatusServiceUnavailable {

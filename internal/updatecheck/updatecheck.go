@@ -15,7 +15,7 @@ import (
 )
 
 // LatestReleaseAPI is the only endpoint used by the update checker.
-const LatestReleaseAPI = "https://api.github.com/repos/tanzir71/dropserve/releases/latest"
+const LatestReleaseAPI = "https://api.github.com/repos/tanzir71/beacon/releases/latest"
 
 const maximumResponseBytes = 64 << 10
 
@@ -42,7 +42,7 @@ type Notification struct {
 func Check(ctx context.Context, options Options) (Notification, error) {
 	current := normalizeVersion(options.CurrentVersion)
 	if !semver.IsValid(current) {
-		return Notification{}, fmt.Errorf("current Dropserve version %q is not semantic", options.CurrentVersion)
+		return Notification{}, fmt.Errorf("current Beacon version %q is not semantic", options.CurrentVersion)
 	}
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, LatestReleaseAPI, nil)
 	if err != nil {
@@ -50,19 +50,19 @@ func Check(ctx context.Context, options Options) (Notification, error) {
 	}
 	request.Header.Set("Accept", "application/vnd.github+json")
 	request.Header.Set("X-GitHub-Api-Version", "2022-11-28")
-	request.Header.Set("User-Agent", "dropserve-update-check/"+strings.TrimPrefix(current, "v"))
+	request.Header.Set("User-Agent", "beacon-update-check/"+strings.TrimPrefix(current, "v"))
 	client := options.Client
 	if client == nil {
 		client = http.DefaultClient
 	}
 	response, err := client.Do(request)
 	if err != nil {
-		return Notification{}, fmt.Errorf("check for a Dropserve release: %w", err)
+		return Notification{}, fmt.Errorf("check for a Beacon release: %w", err)
 	}
 	defer func() { _ = response.Body.Close() }()
 	if response.StatusCode != http.StatusOK {
 		_, _ = io.Copy(io.Discard, io.LimitReader(response.Body, 4<<10))
-		return Notification{}, fmt.Errorf("check for a Dropserve release: GitHub returned %s", response.Status)
+		return Notification{}, fmt.Errorf("check for a Beacon release: GitHub returned %s", response.Status)
 	}
 	var latest struct {
 		TagName string `json:"tag_name"`
@@ -70,11 +70,11 @@ func Check(ctx context.Context, options Options) (Notification, error) {
 	}
 	decoder := json.NewDecoder(io.LimitReader(response.Body, maximumResponseBytes+1))
 	if err := decoder.Decode(&latest); err != nil {
-		return Notification{}, fmt.Errorf("read latest Dropserve release: %w", err)
+		return Notification{}, fmt.Errorf("read latest Beacon release: %w", err)
 	}
 	version := normalizeVersion(latest.TagName)
 	if !semver.IsValid(version) {
-		return Notification{}, fmt.Errorf("latest Dropserve release tag %q is not semantic", latest.TagName)
+		return Notification{}, fmt.Errorf("latest Beacon release tag %q is not semantic", latest.TagName)
 	}
 	if semver.Compare(version, current) <= 0 {
 		return Notification{}, nil
@@ -99,12 +99,12 @@ func safeReleaseURL(value string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("parse latest release link: %w", err)
 	}
-	const releaseTagPrefix = "/tanzir71/dropserve/releases/tag/"
+	const releaseTagPrefix = "/tanzir71/beacon/releases/tag/"
 	releaseTag := strings.TrimPrefix(parsed.EscapedPath(), releaseTagPrefix)
 	if parsed.Scheme != "https" || !strings.EqualFold(parsed.Host, "github.com") || parsed.User != nil ||
 		releaseTag == parsed.EscapedPath() || releaseTag == "" || strings.Contains(releaseTag, "/") ||
 		parsed.RawQuery != "" || parsed.Fragment != "" {
-		return "", errors.New("latest release link is not a Dropserve GitHub release page")
+		return "", errors.New("latest release link is not a Beacon GitHub release page")
 	}
 	return parsed.String(), nil
 }

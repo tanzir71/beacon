@@ -1,4 +1,4 @@
-// Package app defines the immutable description of a discovered Dropserve app.
+// Package app defines the immutable description of a discovered Beacon app.
 package app
 
 // Kind identifies how an app is served.

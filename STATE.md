@@ -1,9 +1,9 @@
 # Build State
 
 **Current milestone:** B0 - New repository, the gate, and the landing page
-**Last updated:** 2026-11-24
+**Last updated:** 2026-11-24T22:58:51Z
 **Gate status:** green
-**Iterations completed:** 1
+**Iterations completed:** 2
 
 ## Milestone Progress
 
@@ -20,7 +20,7 @@
 
 ## Current Milestone Criteria
 
-- [ ] Renamed project passes the complete inherited `make check` gate.
+- [x] Renamed project passes the complete inherited `make check` gate.
 - [ ] Beacon install/uninstall preserves an existing Dropserve installation.
 - [ ] Landing translations have identical keys; generated pages are current.
 - [ ] HTML validation, 150 KB budget, and outside-resource checks pass.
@@ -75,6 +75,31 @@
 - Use the specified default repository name, `tanzir71/beacon`.
 - Keep all original product invariants and gate stages; do not inherit milestone
   completion claims or tags from Dropserve.
+- ADR-015 records Beacon's separate installation identity and SQLite for mesh
+  data only. Existing user-app manifests and base-path environment variables
+  remain unchanged because already-hosted apps can depend on those contracts.
+
+### B0 Product Identifier Isolation
+
+- Added `TestBeaconStorageDoesNotUseDropserveDirectories` and
+  `TestBeaconInstallationIdentifiersAreIndependent`, then observed both fail
+  on the inherited config/state/Apps directories, module path, binary outputs,
+  OS registration names, and missing Beacon command/installer paths.
+- Renamed the module, command directory, binaries, installer, autostart task,
+  firewall rule, service, LaunchAgent, state/config/cache roots, mDNS name, local
+  CA identity, API namespace, CSRF/session names, update repository, release
+  scripts, and matching regression fixtures. The installer has a distinct
+  AppId, `49BAE7EA-599A-4F46-A24B-7905900A85E9`.
+- Preserved the original MIT attribution, handover, ADRs 001-014, and all
+  inherited tests. `dropserve.json` and `DROPSERVE_BASE_PATH`/`DROPSERVE_BASE_URL`
+  remain hosted-app interfaces, never fallback installation paths.
+- Focused new identity tests exited 0. Final `make check` exited 0 with all
+  race tests, version injection (`beacon 1.2.3 (abc1234)`), zero-CGO builds for
+  Windows/amd64, Linux/amd64 and macOS/arm64, optional tray, and shipped-file
+  scanning intact. No OS task, firewall, trust, or Tailscale action was run.
+- This is not the Windows side-by-side installation proof; that acceptance
+  criterion remains unchecked and is the next target.
+- No Beacon milestone tag or release has been created.
 
 ## Open Questions For The Human
 
@@ -92,5 +117,6 @@
 
 ## Next Target
 
-Implement B0 product and installation identifier isolation test-first. The
-baseline bootstrap repair is ready to commit; no milestone is yet complete.
+Implement and run the B0 Windows side-by-side installer preservation proof,
+then build the bilingual landing pages from the supplied copy and tokens.
+Before any new feature work, read this ledger and run `make check` again.

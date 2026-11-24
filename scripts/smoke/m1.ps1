@@ -7,7 +7,7 @@ Set-StrictMode -Version Latest
 
 $repositoryRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 if ($Binary -eq "") {
-    $Binary = Join-Path $repositoryRoot "bin\dropserve-cli.exe"
+    $Binary = Join-Path $repositoryRoot "bin\beacon-cli.exe"
 }
 $binaryPath = (Resolve-Path -LiteralPath $Binary).Path
 $fixturesRoot = (Resolve-Path -LiteralPath (Join-Path $repositoryRoot "testdata\fixtures")).Path
@@ -31,12 +31,12 @@ try {
     while (-not $lineTask.IsCompleted -and [DateTime]::UtcNow -lt $deadline) {
         if ($process.HasExited) {
             $failure = $process.StandardError.ReadToEnd()
-            throw "Dropserve exited before becoming ready: $failure"
+            throw "Beacon exited before becoming ready: $failure"
         }
         $null = $lineTask.Wait(250)
     }
-    if (-not $lineTask.IsCompleted -or $lineTask.Result -notmatch '^Dropserve is ready at (http://\S+)$') {
-        throw "Dropserve did not print a ready address within 45 seconds"
+    if (-not $lineTask.IsCompleted -or $lineTask.Result -notmatch '^Beacon is ready at (http://\S+)$') {
+        throw "Beacon did not print a ready address within 45 seconds"
     }
     $address = $Matches[1]
 

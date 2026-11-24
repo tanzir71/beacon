@@ -1,4 +1,4 @@
-// Package tlsca owns Dropserve's opt-in local certificate authority and leaf
+// Package tlsca owns Beacon's opt-in local certificate authority and leaf
 // certificates. It never changes an operating-system trust store.
 package tlsca
 
@@ -97,7 +97,7 @@ func (authority *Authority) TLSCertificate() (tls.Certificate, error) {
 	defer authority.mu.RUnlock()
 	certificate, err := tls.LoadX509KeyPair(authority.LeafCertificatePath(), authority.LeafKeyPath())
 	if err != nil {
-		return tls.Certificate{}, fmt.Errorf("load Dropserve leaf certificate: %w", err)
+		return tls.Certificate{}, fmt.Errorf("load Beacon leaf certificate: %w", err)
 	}
 	return certificate, nil
 }
@@ -124,8 +124,8 @@ func (authority *Authority) UpdateAddresses(addresses []netip.Addr) (bool, error
 func loadOrCreateRoot(options Options) (*x509.Certificate, *ecdsa.PrivateKey, error) {
 	certificatePath := filepath.Join(options.Directory, "root.pem")
 	keyPath := filepath.Join(options.Directory, "root-key.pem")
-	certificateData, certificateErr := os.ReadFile(certificatePath) // #nosec G304 -- fixed filename under Dropserve's state directory.
-	keyData, keyErr := os.ReadFile(keyPath)                         // #nosec G304 -- fixed filename under Dropserve's state directory.
+	certificateData, certificateErr := os.ReadFile(certificatePath) // #nosec G304 -- fixed filename under Beacon's state directory.
+	keyData, keyErr := os.ReadFile(keyPath)                         // #nosec G304 -- fixed filename under Beacon's state directory.
 	if certificateErr == nil && keyErr == nil {
 		certificate, err := parseCertificatePEM(certificateData)
 		if err != nil {
@@ -152,7 +152,7 @@ func loadOrCreateRoot(options Options) (*x509.Certificate, *ecdsa.PrivateKey, er
 	now := options.Clock().UTC()
 	template := &x509.Certificate{
 		SerialNumber:          randomSerial(),
-		Subject:               pkix.Name{CommonName: "Dropserve Local CA", Organization: []string{"Dropserve"}},
+		Subject:               pkix.Name{CommonName: "Beacon Local CA", Organization: []string{"Beacon"}},
 		NotBefore:             now.Add(-certificateBackdate),
 		NotAfter:              now.AddDate(10, 0, 0),
 		IsCA:                  true,
@@ -186,7 +186,7 @@ func (authority *Authority) issueLeaf(addresses []netip.Addr) error {
 		return fmt.Errorf("generate leaf key: %w", err)
 	}
 	hostname := strings.TrimSuffix(strings.ToLower(strings.TrimSpace(authority.options.Hostname)), ".")
-	dnsNames := uniqueStrings([]string{"localhost", hostname, hostname + ".local", "dropserve.local"})
+	dnsNames := uniqueStrings([]string{"localhost", hostname, hostname + ".local", "beacon.local"})
 	ipAddresses := []net.IP{net.ParseIP("127.0.0.1"), net.ParseIP("::1")}
 	for _, address := range addresses {
 		if address.IsValid() && !address.IsUnspecified() {
@@ -196,7 +196,7 @@ func (authority *Authority) issueLeaf(addresses []netip.Addr) error {
 	now := authority.options.Clock().UTC()
 	template := &x509.Certificate{
 		SerialNumber: randomSerial(),
-		Subject:      pkix.Name{CommonName: "Dropserve on " + hostname, Organization: []string{"Dropserve"}},
+		Subject:      pkix.Name{CommonName: "Beacon on " + hostname, Organization: []string{"Beacon"}},
 		NotBefore:    now.Add(-certificateBackdate),
 		NotAfter:     now.AddDate(2, 0, 0),
 		KeyUsage:     x509.KeyUsageDigitalSignature,

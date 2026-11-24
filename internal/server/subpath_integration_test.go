@@ -20,8 +20,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/tanzir71/dropserve/internal/scanner"
-	dropserver "github.com/tanzir71/dropserve/internal/server"
+	"github.com/tanzir71/beacon/internal/scanner"
+	beaconr "github.com/tanzir71/beacon/internal/server"
 )
 
 func TestCommandRedirectIsRewrittenUnderSlug(t *testing.T) {
@@ -37,7 +37,7 @@ func TestCommandRedirectIsRewrittenUnderSlug(t *testing.T) {
 	if err != nil {
 		t.Fatalf("resolve subpath fixture: %v", err)
 	}
-	server, err := dropserver.New(scanner.Options{Registered: []string{fixture}})
+	server, err := beaconr.New(scanner.Options{Registered: []string{fixture}})
 	if err != nil {
 		t.Fatalf("create subpath server: %v", err)
 	}
@@ -89,7 +89,7 @@ func TestCommandCookiePathIsRewrittenUnderSlug(t *testing.T) {
 	if err != nil {
 		t.Fatalf("resolve subpath fixture: %v", err)
 	}
-	server, err := dropserver.New(scanner.Options{Registered: []string{fixture}})
+	server, err := beaconr.New(scanner.Options{Registered: []string{fixture}})
 	if err != nil {
 		t.Fatalf("create subpath server: %v", err)
 	}
@@ -138,7 +138,7 @@ func TestCommandHTMLBaseInjection(t *testing.T) {
 	if err != nil {
 		t.Fatalf("resolve subpath fixture: %v", err)
 	}
-	server, err := dropserver.New(scanner.Options{Registered: []string{fixture}})
+	server, err := beaconr.New(scanner.Options{Registered: []string{fixture}})
 	if err != nil {
 		t.Fatalf("create subpath server: %v", err)
 	}
@@ -177,7 +177,7 @@ func TestCommandNonHTMLResponsesAreByteIdentical(t *testing.T) {
 	if err != nil {
 		t.Fatalf("resolve subpath fixture: %v", err)
 	}
-	server, err := dropserver.New(scanner.Options{Registered: []string{fixture}})
+	server, err := beaconr.New(scanner.Options{Registered: []string{fixture}})
 	if err != nil {
 		t.Fatalf("create subpath server: %v", err)
 	}
@@ -233,7 +233,7 @@ func TestFiveMegabyteHTMLResponseIsNotRewritten(t *testing.T) {
 	if err != nil {
 		t.Fatalf("resolve subpath fixture: %v", err)
 	}
-	server, err := dropserver.New(scanner.Options{Registered: []string{fixture}})
+	server, err := beaconr.New(scanner.Options{Registered: []string{fixture}})
 	if err != nil {
 		t.Fatalf("create subpath server: %v", err)
 	}
@@ -293,7 +293,7 @@ func TestCommandReceivesForwardedSubpathHeaders(t *testing.T) {
 	if err != nil {
 		t.Fatalf("resolve subpath fixture: %v", err)
 	}
-	server, err := dropserver.New(scanner.Options{Registered: []string{fixture}})
+	server, err := beaconr.New(scanner.Options{Registered: []string{fixture}})
 	if err != nil {
 		t.Fatalf("create subpath server: %v", err)
 	}
@@ -350,7 +350,7 @@ func TestWebSocketUpgradeThroughCommandProxy(t *testing.T) {
 	if err != nil {
 		t.Fatalf("resolve subpath fixture: %v", err)
 	}
-	server, err := dropserver.New(scanner.Options{Registered: []string{fixture}})
+	server, err := beaconr.New(scanner.Options{Registered: []string{fixture}})
 	if err != nil {
 		t.Fatalf("create subpath server: %v", err)
 	}
@@ -402,7 +402,7 @@ func TestWebSocketUpgradeThroughCommandProxy(t *testing.T) {
 			break
 		}
 	}
-	payload := []byte("echo through dropserve")
+	payload := []byte("echo through beacon")
 	if len(payload) > 125 {
 		t.Fatalf("test WebSocket payload is %d bytes; short frames allow at most 125", len(payload))
 	}
@@ -460,7 +460,7 @@ http.createServer((_request, response) => {
 		}
 	}
 	t.Setenv("PUBLIC_URL", "")
-	server, err := dropserver.New(scanner.Options{Registered: []string{fixture}})
+	server, err := beaconr.New(scanner.Options{Registered: []string{fixture}})
 	if err != nil {
 		t.Fatalf("create environment server: %v", err)
 	}
@@ -469,7 +469,7 @@ http.createServer((_request, response) => {
 			t.Errorf("close environment server: %v", closeErr)
 		}
 	}()
-	request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://dropserve.test/environment/", nil)
+	request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://beacon.test/environment/", nil)
 	recorder := httptest.NewRecorder()
 	server.Handler().ServeHTTP(recorder, request)
 	if recorder.Code != http.StatusOK {
@@ -552,7 +552,7 @@ http.createServer((_request, response) => {
 		}
 		registered = append(registered, fixture)
 	}
-	server, err := dropserver.New(scanner.Options{Registered: registered})
+	server, err := beaconr.New(scanner.Options{Registered: registered})
 	if err != nil {
 		t.Fatalf("create base-href server: %v", err)
 	}
@@ -563,7 +563,7 @@ http.createServer((_request, response) => {
 	}()
 	for _, test := range tests {
 		t.Run(test.mode, func(t *testing.T) {
-			request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://dropserve.test/"+test.slug+"/", nil)
+			request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://beacon.test/"+test.slug+"/", nil)
 			recorder := httptest.NewRecorder()
 			server.Handler().ServeHTTP(recorder, request)
 			if recorder.Code != http.StatusOK {

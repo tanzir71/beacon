@@ -1,13 +1,24 @@
-# Dropserve
+# Blackout Beacon
 
-[![CI](https://github.com/tanzir71/dropserve/actions/workflows/ci.yml/badge.svg)](https://github.com/tanzir71/dropserve/actions/workflows/ci.yml)
+[![CI](https://github.com/tanzir71/beacon/actions/workflows/ci.yml/badge.svg)](https://github.com/tanzir71/beacon/actions/workflows/ci.yml)
 [![MIT License](https://img.shields.io/badge/license-MIT-147d64.svg)](LICENSE)
 
-Dropserve turns folders on one computer into local websites. Put an app in your Apps folder and it appears on a searchable dashboard without configuration or a restart. Static sites work immediately; Node, Python, PHP, SQLite, MariaDB, and PostgreSQL are supported without bundling a heavyweight stack into the base install.
+Beacon turns folders on one computer into local websites. Put an app in your Apps folder and it appears on a searchable dashboard without configuration or a restart. Static sites work immediately; Node, Python, PHP, SQLite, MariaDB, and PostgreSQL are supported without bundling a heavyweight stack into the base install.
+
+This repository builds Blackout Beacon on Dropserve's hosting engine. The B0
+bootstrap is in progress: discovery, encrypted messaging, phone identities,
+lighthouses, and off-grid bundles are not shipped yet. See `STATE.md` for verified
+progress. The pictures below show the inherited hosting dashboard, not the
+planned Beacon communication interface.
+
+Beacon uses its own install, configuration, state, task, firewall, and service
+identifiers. It does not migrate or remove an existing Dropserve installation.
+Existing hosted-app `dropserve.json` manifests and `DROPSERVE_BASE_PATH` /
+`DROPSERVE_BASE_URL` environment variables intentionally remain supported.
 
 | Light | Dark |
 |---|---|
-| ![Dropserve dashboard in the light theme](docs/screenshots/dashboard-light.png) | ![Dropserve dashboard in the dark theme](docs/screenshots/dashboard-dark.png) |
+| ![Beacon dashboard in the light theme](docs/screenshots/dashboard-light.png) | ![Beacon dashboard in the dark theme](docs/screenshots/dashboard-dark.png) |
 
 ## What it does
 
@@ -27,39 +38,39 @@ Dropserve turns folders on one computer into local websites. Put an app in your 
 The first tagged installer is still being acceptance-tested. Until it is published, build from source with Go 1.25 or newer and GNU Make:
 
 ```console
-git clone https://github.com/tanzir71/dropserve.git
-cd dropserve
+git clone https://github.com/tanzir71/beacon.git
+cd beacon
 make check
 make build
 ```
 
 On Windows, `make build` creates:
 
-- `bin/dropserve.exe` — the console-free desktop and tray application.
-- `bin/dropserve-cli.exe` — terminal commands and diagnostics.
+- `bin/beacon.exe` — the console-free desktop and tray application.
+- `bin/beacon-cli.exe` — terminal commands and diagnostics.
 
-Run `bin/dropserve.exe`. The one-screen setup asks for an Apps folder and whether Dropserve should start at login, creates a useful example app, and opens the dashboard. On Linux and macOS, run `bin/dropserve` for the same browser-based setup.
+Run `bin/beacon.exe`. The one-screen setup asks for an Apps folder and whether Beacon should start at login, creates a useful example app, and opens the dashboard. On Linux and macOS, run `bin/beacon` for the same browser-based setup.
 
 Useful commands:
 
 ```console
-dropserve serve
-dropserve add PATH
-dropserve status
-dropserve open
-dropserve apps
-dropserve logs SLUG -f
-dropserve restart SLUG
-dropserve doctor
-dropserve autostart enable
-dropserve trust install
-dropserve firewall allow
-dropserve tailscale status
-dropserve runtime install php
-dropserve config validate
+beacon serve
+beacon add PATH
+beacon status
+beacon open
+beacon apps
+beacon logs SLUG -f
+beacon restart SLUG
+beacon doctor
+beacon autostart enable
+beacon trust install
+beacon firewall allow
+beacon tailscale status
+beacon runtime install php
+beacon config validate
 ```
 
-`dropserve add PATH` registers a folder without moving, copying, or modifying it. Windows uses a current-user Scheduled Task, Linux uses a systemd user unit, and macOS uses a per-user LaunchAgent.
+`beacon add PATH` registers a folder without moving, copying, or modifying it. Windows uses a current-user Scheduled Task, Linux uses a systemd user unit, and macOS uses a per-user LaunchAgent.
 
 ## Apps
 
@@ -73,7 +84,7 @@ Apps/
     └── app.css
 ```
 
-Dropserve detects common static, Node, Python, and PHP layouts. An optional `dropserve.json` can set a display name, description, icon, command, environment, visibility, health path, SPA fallback, and other advanced behavior. App files remain yours: scanning, serving, and removal of optional runtimes do not write into them.
+Beacon detects common static, Node, Python, and PHP layouts. An optional `dropserve.json` can set a display name, description, icon, command, environment, visibility, health path, SPA fallback, and other advanced behavior. App files remain yours: scanning, serving, and removal of optional runtimes do not write into them.
 
 All manifest fields are optional. Unknown keys produce a dashboard warning, and malformed JSON falls back to normal detection instead of hiding the app. The reference shape is:
 
@@ -99,7 +110,7 @@ All manifest fields are optional. Unknown keys produce a dashboard warning, and 
 }
 ```
 
-`config.toml` supports the documented `[server]`, `[dashboard]`, `[discovery]`, `[security]`, `[runtimes]`, and `[updates]` sections. `dropserve config edit` creates and opens it, `dropserve config validate` checks syntax and values, and safe settings are hot-reloaded. A malformed edit leaves the last good configuration running. Listener bind/port changes are reported and take effect after restart. Dropserve v1 accepts `runtimes.php_version = "8.3"` and currently pins the official PHP 8.3.33 Windows pack; per-app PHP versions remain out of scope.
+`config.toml` supports the documented `[server]`, `[dashboard]`, `[discovery]`, `[security]`, `[runtimes]`, and `[updates]` sections. `beacon config edit` creates and opens it, `beacon config validate` checks syntax and values, and safe settings are hot-reloaded. A malformed edit leaves the last good configuration running. Listener bind/port changes are reported and take effect after restart. Beacon v1 accepts `runtimes.php_version = "8.3"` and currently pins the official PHP 8.3.33 Windows pack; per-app PHP versions remain out of scope.
 
 The optional PIN lock expects the SHA-256 digest of a six-digit PIN. For example, PowerShell can generate it without sending the PIN anywhere:
 
@@ -115,7 +126,7 @@ The dashboard's local JSON and SSE endpoints are documented in [docs/api.md](doc
 
 ## Network and security model
 
-Dropserve is a personal server for a home or office LAN, not a hardened public web server. By default, anyone on the same LAN can reach LAN-visible apps, and app processes run with your user account's privileges. Only add code you wrote or trust.
+Beacon is a personal server for a home or office LAN, not a hardened public web server. By default, anyone on the same LAN can reach LAN-visible apps, and app processes run with your user account's privileges. Only add code you wrote or trust.
 
 Per-app `visibility` is enforced before serving or proxying: `lan` (default), `local` (loopback only), `tailnet` (`100.64.0.0/10` sources only), or `public`. The optional PIN lock protects every non-loopback route except the health check. See [SECURITY.md](SECURITY.md) for the complete threat model and private reporting instructions.
 
@@ -135,19 +146,19 @@ Release builds publish SHA-256 checksums, SPDX SBOMs, GitHub provenance attestat
 After downloading an artifact and its matching `.sigstore.json` bundle, verify that it was signed by this repository's tag-only release workflow:
 
 ```bash
-ARTIFACT=dropserve_1.2.3_windows_amd64.zip
+ARTIFACT=beacon_1.2.3_windows_amd64.zip
 cosign verify-blob \
   --bundle "$ARTIFACT.sigstore.json" \
-  --certificate-identity-regexp '^https://github\.com/tanzir71/dropserve/\.github/workflows/release\.yml@refs/tags/v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$' \
+  --certificate-identity-regexp '^https://github\.com/tanzir71/beacon/\.github/workflows/release\.yml@refs/tags/v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$' \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com \
   "$ARTIFACT"
 ```
 
 The same artifact name appears in `checksums.txt`; compare its listed digest with `sha256sum "$ARTIFACT"` (or `Get-FileHash $ARTIFACT -Algorithm SHA256` on Windows).
 
-The Windows installer asks for administrator approval once so it can add the private-network firewall rule required for other devices to connect. Dropserve itself runs as the signed-in user and its start-at-login task is current-user only. This elevation tradeoff is recorded in [ADR-014](docs/adr/014-windows-installer-elevation.md).
+The Windows installer asks for administrator approval once so it can add the private-network firewall rule required for other devices to connect. Beacon itself runs as the signed-in user and its start-at-login task is current-user only. This elevation tradeoff is recorded in [ADR-014](docs/adr/014-windows-installer-elevation.md).
 
-The Windows uninstaller stops Dropserve and removes its start-at-login task, firewall rule, and any Dropserve local certificate authority before deleting the install directory. Your own Apps folders are never removed.
+The Windows uninstaller stops Beacon and removes its start-at-login task, firewall rule, and any Beacon local certificate authority before deleting the install directory. Your own Apps folders are never removed.
 
 ## Development
 
@@ -162,8 +173,8 @@ The Windows uninstaller stops Dropserve and removes its start-at-login task, fir
 
 ## Glossary
 
-**App** — a folder in an Apps root. **Slug** — the URL-safe name derived from the folder name. **Apps root** — a folder Dropserve watches. **Mount** — making an app reachable at a URL. **Pack** — an optional downloadable PHP, MariaDB, or PostgreSQL runtime. **Own port** — the stable dedicated app port that remains available when path mounting is incompatible. **Tailnet** — your private Tailscale network. **Funnel** — Tailscale's public-internet exposure feature.
+**App** — a folder in an Apps root. **Slug** — the URL-safe name derived from the folder name. **Apps root** — a folder Beacon watches. **Mount** — making an app reachable at a URL. **Pack** — an optional downloadable PHP, MariaDB, or PostgreSQL runtime. **Own port** — the stable dedicated app port that remains available when path mounting is incompatible. **Tailnet** — your private Tailscale network. **Funnel** — Tailscale's public-internet exposure feature.
 
 ## Licence
 
-Dropserve is available under the [MIT License](LICENSE).
+Beacon is available under the [MIT License](LICENSE).

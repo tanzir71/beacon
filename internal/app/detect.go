@@ -305,7 +305,7 @@ func readManifestSettings(root string) (manifestSettings, error) {
 	if err := json.Unmarshal(content, &settings); err != nil {
 		return manifestSettings{Warnings: []ManifestWarning{{
 			Code:    "manifest_parse",
-			Message: fmt.Sprintf("Could not parse %s; Dropserve used automatic detection instead: %v", manifestPath, err),
+			Message: fmt.Sprintf("Could not parse %s; Beacon used automatic detection instead: %v", manifestPath, err),
 		}}}, nil
 	}
 	var fields map[string]json.RawMessage

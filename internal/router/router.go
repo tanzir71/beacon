@@ -9,7 +9,7 @@ import (
 	"strings"
 	"sync/atomic"
 
-	"github.com/tanzir71/dropserve/internal/app"
+	"github.com/tanzir71/beacon/internal/app"
 )
 
 // Mount connects a discovered app with the handler that serves it.
@@ -113,11 +113,11 @@ func serveVisibilityDenied(response http.ResponseWriter, request *http.Request, 
 	explanation := "This app is not available from your current network."
 	switch strings.ToLower(strings.TrimSpace(visibility)) {
 	case "local":
-		explanation = "This app is set to local visibility and can only be opened on the Dropserve computer."
+		explanation = "This app is set to local visibility and can only be opened on the Beacon computer."
 	case "tailnet":
 		explanation = "This app is set to tailnet visibility and can only be opened through Tailscale."
 	}
-	content := `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>App access blocked · Dropserve</title><body><main><h1>Dropserve blocked this request.</h1><p>` + explanation + `</p><p>Change the app's <code>visibility</code> in <code>dropserve.json</code> if this was not intended.</p></main></body></html>`
+	content := `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>App access blocked · Beacon</title><body><main><h1>Beacon blocked this request.</h1><p>` + explanation + `</p><p>Change the app's <code>visibility</code> in <code>dropserve.json</code> if this was not intended.</p></main></body></html>`
 	response.Header().Set("Content-Type", "text/html; charset=utf-8")
 	response.Header().Set("Content-Length", strconv.Itoa(len(content)))
 	response.WriteHeader(http.StatusForbidden)
@@ -127,7 +127,7 @@ func serveVisibilityDenied(response http.ResponseWriter, request *http.Request, 
 }
 
 func serveNotFound(response http.ResponseWriter, request *http.Request) {
-	const content = `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>App not found · Dropserve</title><body><main><h1>Dropserve could not find that app.</h1><p>Check the address, or return to <a href="/">your apps</a>.</p></main></body></html>`
+	const content = `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>App not found · Beacon</title><body><main><h1>Beacon could not find that app.</h1><p>Check the address, or return to <a href="/">your apps</a>.</p></main></body></html>`
 	response.Header().Set("Content-Type", "text/html; charset=utf-8")
 	response.Header().Set("Content-Length", strconv.Itoa(len(content)))
 	response.WriteHeader(http.StatusNotFound)

@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/tanzir71/dropserve/internal/app"
+	"github.com/tanzir71/beacon/internal/app"
 )
 
 func TestCommandEnvironmentIncludesFrameworkBasePathConventions(t *testing.T) {

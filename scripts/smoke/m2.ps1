@@ -7,7 +7,7 @@ Set-StrictMode -Version Latest
 
 $repositoryRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 if ($Binary -eq "") {
-    $Binary = Join-Path $repositoryRoot "bin\dropserve-cli.exe"
+    $Binary = Join-Path $repositoryRoot "bin\beacon-cli.exe"
 }
 $binaryPath = (Resolve-Path -LiteralPath $Binary).Path
 $fixturesRoot = (Resolve-Path -LiteralPath (Join-Path $repositoryRoot "testdata\fixtures")).Path
@@ -30,12 +30,12 @@ try {
     $lineTask = $process.StandardOutput.ReadLineAsync()
     while (-not $lineTask.IsCompleted -and [DateTime]::UtcNow -lt $deadline) {
         if ($process.HasExited) {
-            throw "Dropserve exited before becoming ready: $($process.StandardError.ReadToEnd())"
+            throw "Beacon exited before becoming ready: $($process.StandardError.ReadToEnd())"
         }
         $null = $lineTask.Wait(250)
     }
-    if (-not $lineTask.IsCompleted -or $lineTask.Result -notmatch '^Dropserve is ready at (http://\S+)$') {
-        throw "Dropserve did not print a ready address within 45 seconds"
+    if (-not $lineTask.IsCompleted -or $lineTask.Result -notmatch '^Beacon is ready at (http://\S+)$') {
+        throw "Beacon did not print a ready address within 45 seconds"
     }
     $address = $Matches[1]
 
@@ -43,7 +43,7 @@ try {
     if ($dashboard.StatusCode -ne 200 -or $dashboard.Content -notmatch 'id="app-search"') {
         throw "Dashboard returned an unexpected response"
     }
-    $advertisedURLs = Invoke-RestMethod -Uri "$address/_dropserve/api/urls"
+    $advertisedURLs = Invoke-RestMethod -Uri "$address/_beacon/api/urls"
     $workingURLs = @($advertisedURLs | Where-Object { $_.PSObject.Properties["url"] -and $_.url })
     if ($workingURLs.Count -lt 1) {
         throw "Sharing did not expose any verified address: $($advertisedURLs | ConvertTo-Json -Compress)"
@@ -58,17 +58,17 @@ try {
             throw "Advertised address $($entry.url) returned $($advertisedResponse.StatusCode)"
         }
     }
-    $apps = Invoke-RestMethod -Uri "$address/_dropserve/api/apps"
+    $apps = Invoke-RestMethod -Uri "$address/_beacon/api/apps"
     foreach ($requiredSlug in @("field-notes", "invoice-desk", "kitchen-timer", "static")) {
         if ($requiredSlug -notin $apps.slug) {
             throw "Apps API did not return the required $requiredSlug fixture"
         }
     }
-    $results = Invoke-RestMethod -Uri "$address/_dropserve/api/search?q=observations"
+    $results = Invoke-RestMethod -Uri "$address/_beacon/api/search?q=observations"
     if ($results.Count -ne 1 -or $results[0].slug -ne "field-notes") {
         throw "README search did not return field-notes"
     }
-    $qr = Invoke-WebRequest -Uri "$address/_dropserve/api/qr?url=$([Uri]::EscapeDataString("$address/field-notes/"))" -UseBasicParsing
+    $qr = Invoke-WebRequest -Uri "$address/_beacon/api/qr?url=$([Uri]::EscapeDataString("$address/field-notes/"))" -UseBasicParsing
     if ($qr.StatusCode -ne 200 -or $qr.Headers["Content-Type"] -ne "image/png" -or $qr.RawContentLength -lt 300) {
         throw "QR endpoint did not return a substantial PNG"
     }

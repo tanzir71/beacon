@@ -2,13 +2,13 @@
 set -eu
 
 repository_root=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
-binary=${1:-"$repository_root/bin/dropserve"}
+binary=${1:-"$repository_root/bin/beacon"}
 fixtures_root="$repository_root/testdata/fixtures"
-work_directory=$(mktemp -d "${TMPDIR:-/tmp}/dropserve-m5-smoke.XXXXXX")
+work_directory=$(mktemp -d "${TMPDIR:-/tmp}/beacon-m5-smoke.XXXXXX")
 apps_root="$work_directory/apps"
 state_path="$work_directory/state.json"
-output_path="$work_directory/dropserve.out"
-error_path="$work_directory/dropserve.err"
+output_path="$work_directory/beacon.out"
+error_path="$work_directory/beacon.err"
 process_id=""
 
 fail() {
@@ -22,7 +22,7 @@ cleanup() {
         wait "$process_id" 2>/dev/null || true
     fi
     case "$work_directory" in
-        "${TMPDIR:-/tmp}"/dropserve-m5-smoke.*) rm -rf -- "$work_directory" ;;
+        "${TMPDIR:-/tmp}"/beacon-m5-smoke.*) rm -rf -- "$work_directory" ;;
     esac
 }
 trap cleanup EXIT INT TERM
@@ -31,7 +31,7 @@ mkdir "$apps_root"
 cp -R "$fixtures_root/absolute-paths" "$apps_root/absolute-paths"
 cp -R "$fixtures_root/subpath" "$apps_root/subpath"
 
-start_dropserve() {
+start_beacon() {
     : >"$output_path"
     : >"$error_path"
     "$binary" serve --listen 127.0.0.1:0 --root "$apps_root" --state "$state_path" >"$output_path" 2>"$error_path" &
@@ -39,22 +39,22 @@ start_dropserve() {
     attempt=0
     while [ "$attempt" -lt 180 ]; do
         if ! kill -0 "$process_id" 2>/dev/null; then
-            printf 'Dropserve exited before readiness:\n' >&2
+            printf 'Beacon exited before readiness:\n' >&2
             cat "$error_path" >&2
             exit 1
         fi
-        address=$(sed -n 's/^Dropserve is ready at \(http:\/\/[^ ]*\)$/\1/p' "$output_path" | head -n 1)
+        address=$(sed -n 's/^Beacon is ready at \(http:\/\/[^ ]*\)$/\1/p' "$output_path" | head -n 1)
         if [ -n "$address" ]; then
             return
         fi
         attempt=$((attempt + 1))
         sleep 0.25
     done
-    printf 'Dropserve did not become ready\n' >&2
+    printf 'Beacon did not become ready\n' >&2
     exit 1
 }
 
-stop_dropserve() {
+stop_beacon() {
     if [ -n "$process_id" ] && kill -0 "$process_id" 2>/dev/null; then
         kill "$process_id"
         wait "$process_id" 2>/dev/null || true
@@ -66,7 +66,7 @@ wait_for_subpath_app() {
     attempt=0
     while [ "$attempt" -lt 180 ]; do
         if ! kill -0 "$process_id" 2>/dev/null; then
-            printf 'Dropserve exited while the subpath app was starting:\n' >&2
+            printf 'Beacon exited while the subpath app was starting:\n' >&2
             cat "$error_path" >&2
             exit 1
         fi
@@ -80,7 +80,7 @@ wait_for_subpath_app() {
     fail "subpath app did not become ready within 45 seconds"
 }
 
-start_dropserve
+start_beacon
 wait_for_subpath_app
 
 redirect_headers="$work_directory/redirect.headers"
@@ -193,7 +193,7 @@ socket.on("close", () => {
 NODE
 
 apps_path="$work_directory/apps.json"
-curl -fsS -o "$apps_path" "$address/_dropserve/api/apps"
+curl -fsS -o "$apps_path" "$address/_beacon/api/apps"
 first_port=$(node -e '
 let data = "";
 process.stdin.on("data", chunk => data += chunk);
@@ -213,13 +213,13 @@ own_body="$work_directory/own.html"
 curl -fsS -o "$own_body" "$own_url"
 grep -Fq 'Absolute paths fixture' "$own_body" || fail "own-port URL did not serve the fixture at its root"
 dashboard_script="$work_directory/dashboard.js"
-curl -fsS -o "$dashboard_script" "$address/_dropserve/app.js"
+curl -fsS -o "$dashboard_script" "$address/_beacon/app.js"
 grep -Fq 'This app expects to live at the root' "$dashboard_script" || fail "dashboard omitted the own-port explanation"
 grep -Fq 'Use the short URL anyway' "$dashboard_script" || fail "dashboard omitted the short-URL rescue action"
 
-stop_dropserve
-start_dropserve
-curl -fsS -o "$apps_path" "$address/_dropserve/api/apps"
+stop_beacon
+start_beacon
+curl -fsS -o "$apps_path" "$address/_beacon/api/apps"
 second_port=$(node -e '
 let data = "";
 process.stdin.on("data", chunk => data += chunk);

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Set up Dropserve</title>
+  <title>Set up Beacon</title>
   <style>
     :root { color-scheme: light dark; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
     * { box-sizing: border-box; }
@@ -31,8 +31,8 @@
 <body>
   <main>
     <div class="mark" aria-hidden="true">D</div>
-    <h1>Set up Dropserve</h1>
-    <p class="intro">Choose one folder, then Dropserve will turn every app inside it into a local website.</p>
+    <h1>Set up Beacon</h1>
+    <p class="intro">Choose one folder, then Beacon will turn every app inside it into a local website.</p>
     {{if .Message}}<p class="error" role="alert">{{.Message}}</p>{{end}}
     <form method="post" action="/start">
       <label>Apps folder
@@ -40,11 +40,11 @@
       </label>
       <label class="check">
         <input type="checkbox" name="autostart" checked>
-        <span>Start Dropserve when I log in</span>
+        <span>Start Beacon when I log in</span>
       </label>
       <button type="submit">Start</button>
     </form>
-    <p class="note">Anyone on your Wi-Fi can reach these apps. Dropserve also checks once a day whether a new release is available; it never installs updates by itself.</p>
+    <p class="note">Anyone on your Wi-Fi can reach these apps. Beacon also checks once a day whether a new release is available; it never installs updates by itself.</p>
   </main>
 </body>
 </html>

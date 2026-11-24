@@ -41,14 +41,14 @@ func CurrentAddonPacks() []Pack {
 	}
 }
 
-// CurrentPHPPack returns Dropserve's pinned official PHP artifact for this platform.
+// CurrentPHPPack returns Beacon's pinned official PHP artifact for this platform.
 func CurrentPHPPack() (Pack, error) {
 	for _, pack := range CurrentAddonPacks() {
 		if pack.Name == "php" {
 			return pack, nil
 		}
 	}
-	return Pack{}, fmt.Errorf("the Dropserve PHP pack is not published for %s/%s yet", runtime.GOOS, runtime.GOARCH)
+	return Pack{}, fmt.Errorf("the Beacon PHP pack is not published for %s/%s yet", runtime.GOOS, runtime.GOARCH)
 }
 
 // InstalledExecutable returns the verified manifest location when the pack exists.

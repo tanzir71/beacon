@@ -15,17 +15,17 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/tanzir71/dropserve/internal/app"
-	"github.com/tanzir71/dropserve/internal/dashboard"
-	"github.com/tanzir71/dropserve/internal/discovery"
-	"github.com/tanzir71/dropserve/internal/indexer"
-	"github.com/tanzir71/dropserve/internal/preferences"
-	"github.com/tanzir71/dropserve/internal/router"
-	"github.com/tanzir71/dropserve/internal/scanner"
-	"github.com/tanzir71/dropserve/internal/sqlitebrowser"
-	staticserver "github.com/tanzir71/dropserve/internal/static"
-	"github.com/tanzir71/dropserve/internal/supervisor"
-	"github.com/tanzir71/dropserve/internal/watcher"
+	"github.com/tanzir71/beacon/internal/app"
+	"github.com/tanzir71/beacon/internal/dashboard"
+	"github.com/tanzir71/beacon/internal/discovery"
+	"github.com/tanzir71/beacon/internal/indexer"
+	"github.com/tanzir71/beacon/internal/preferences"
+	"github.com/tanzir71/beacon/internal/router"
+	"github.com/tanzir71/beacon/internal/scanner"
+	"github.com/tanzir71/beacon/internal/sqlitebrowser"
+	staticserver "github.com/tanzir71/beacon/internal/static"
+	"github.com/tanzir71/beacon/internal/supervisor"
+	"github.com/tanzir71/beacon/internal/watcher"
 )
 
 type snapshot struct {
@@ -124,15 +124,15 @@ func NewWithOptions(options Options) (*Server, error) {
 	handler := http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
 		const maximumRequestBody = 64 << 20
 		if request.ContentLength > maximumRequestBody {
-			http.Error(response, "Dropserve accepts request bodies up to 64 MB.", http.StatusRequestEntityTooLarge)
+			http.Error(response, "Beacon accepts request bodies up to 64 MB.", http.StatusRequestEntityTooLarge)
 			return
 		}
 		request.Body = http.MaxBytesReader(response, request.Body, maximumRequestBody)
-		if request.URL.Path == "/_dropserve/api/events" {
+		if request.URL.Path == "/_beacon/api/events" {
 			server.events.serveHTTP(response, request)
 			return
 		}
-		if strings.HasPrefix(request.URL.Path, "/_dropserve/api/logs/") {
+		if strings.HasPrefix(request.URL.Path, "/_beacon/api/logs/") {
 			server.serveCommandLogs(response, request)
 			return
 		}
@@ -141,7 +141,7 @@ func NewWithOptions(options Options) (*Server, error) {
 		if live != nil {
 			pinToRoot = live.pinToRoot
 		}
-		reservedDashboardPath := request.URL.Path == "/_dropserve" || strings.HasPrefix(request.URL.Path, "/_dropserve/")
+		reservedDashboardPath := request.URL.Path == "/_beacon" || strings.HasPrefix(request.URL.Path, "/_beacon/")
 		if pinToRoot != "" && request.URL.Path != "/" && !reservedDashboardPath && server.hasExplicitAppPath(request.URL.Path) {
 			server.router.ServeHTTP(response, request)
 			return
@@ -156,17 +156,17 @@ func NewWithOptions(options Options) (*Server, error) {
 			server.router.ServeHTTP(response, proxied)
 			return
 		}
-		if request.URL.Path == "/" || strings.HasPrefix(request.URL.Path, "/_dropserve/") {
+		if request.URL.Path == "/" || strings.HasPrefix(request.URL.Path, "/_beacon/") {
 			current := server.snapshot.Load()
 			if current == nil || current.dashboard == nil {
-				http.Error(response, "Dropserve is preparing the dashboard.", http.StatusServiceUnavailable)
+				http.Error(response, "Beacon is preparing the dashboard.", http.StatusServiceUnavailable)
 				return
 			}
 			current.dashboard.ServeHTTP(response, request)
 			return
 		}
-		if request.URL.Path == "/_dropserve" {
-			http.Redirect(response, request, "/_dropserve/", http.StatusMovedPermanently)
+		if request.URL.Path == "/_beacon" {
+			http.Redirect(response, request, "/_beacon/", http.StatusMovedPermanently)
 			return
 		}
 		if server.preferences != nil {
@@ -479,7 +479,7 @@ func (server *Server) reconcileLocked() error {
 func needsPHPRuntimeHandler() http.Handler {
 	return http.HandlerFunc(func(response http.ResponseWriter, _ *http.Request) {
 		response.Header().Set("Content-Type", "text/html; charset=utf-8")
-		_, _ = response.Write([]byte(`<!doctype html><html lang="en"><meta charset="utf-8"><title>PHP needed · Dropserve</title><body><main><h1>This app needs PHP.</h1><p>Install the optional PHP pack from Dropserve Add-ons, then try again.</p></main></body></html>`))
+		_, _ = response.Write([]byte(`<!doctype html><html lang="en"><meta charset="utf-8"><title>PHP needed · Beacon</title><body><main><h1>This app needs PHP.</h1><p>Install the optional PHP pack from Beacon Add-ons, then try again.</p></main></body></html>`))
 	})
 }
 
@@ -489,7 +489,7 @@ func (server *Server) serveCommandLogs(response http.ResponseWriter, request *ht
 		http.Error(response, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	slug := strings.TrimPrefix(request.URL.Path, "/_dropserve/api/logs/")
+	slug := strings.TrimPrefix(request.URL.Path, "/_beacon/api/logs/")
 	if slug == "" || strings.Contains(slug, "/") {
 		http.NotFound(response, request)
 		return
@@ -506,7 +506,7 @@ func (server *Server) serveCommandLogs(response http.ResponseWriter, request *ht
 	response.Header().Set("Content-Type", "application/json; charset=utf-8")
 	response.Header().Set("Cache-Control", "no-store")
 	if err := json.NewEncoder(response).Encode(commandState); err != nil {
-		http.Error(response, "Dropserve could not encode these logs.", http.StatusInternalServerError)
+		http.Error(response, "Beacon could not encode these logs.", http.StatusInternalServerError)
 	}
 }
 
@@ -517,7 +517,7 @@ func (server *Server) streamCommandLogs(response http.ResponseWriter, request *h
 		return
 	}
 	if err := http.NewResponseController(response).SetWriteDeadline(time.Time{}); err != nil && !errors.Is(err, http.ErrNotSupported) {
-		http.Error(response, "Dropserve could not prepare the live log stream.", http.StatusInternalServerError)
+		http.Error(response, "Beacon could not prepare the live log stream.", http.StatusInternalServerError)
 		return
 	}
 	if request.Method != http.MethodHead {
@@ -525,7 +525,7 @@ func (server *Server) streamCommandLogs(response http.ResponseWriter, request *h
 		case server.logClients <- struct{}{}:
 			defer func() { <-server.logClients }()
 		default:
-			http.Error(response, "Dropserve has reached its live-log connection limit.", http.StatusServiceUnavailable)
+			http.Error(response, "Beacon has reached its live-log connection limit.", http.StatusServiceUnavailable)
 			return
 		}
 	}

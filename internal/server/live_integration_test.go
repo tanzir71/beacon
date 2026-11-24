@@ -14,15 +14,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/tanzir71/dropserve/internal/scanner"
-	dropserver "github.com/tanzir71/dropserve/internal/server"
+	"github.com/tanzir71/beacon/internal/scanner"
+	beaconr "github.com/tanzir71/beacon/internal/server"
 )
 
 func TestDropFolderBecomesReachable(t *testing.T) {
 	t.Parallel()
 
 	root := t.TempDir()
-	server, err := dropserver.New(scanner.Options{Roots: []string{root}})
+	server, err := beaconr.New(scanner.Options{Roots: []string{root}})
 	if err != nil {
 		t.Fatalf("create live server: %v", err)
 	}
@@ -86,7 +86,7 @@ func TestDeletedFolderIsRemovedWithinTwoSeconds(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(appRoot, "index.html"), []byte("<h1>Old notes</h1>"), 0o600); err != nil {
 		t.Fatalf("write app index: %v", err)
 	}
-	server, err := dropserver.New(scanner.Options{Roots: []string{root}})
+	server, err := beaconr.New(scanner.Options{Roots: []string{root}})
 	if err != nil {
 		t.Fatalf("create live server: %v", err)
 	}
@@ -110,7 +110,7 @@ func TestDeletedFolderIsRemovedWithinTwoSeconds(t *testing.T) {
 	for {
 		status, body := requestLiveApp(t, httpServer.Client(), httpServer.URL+"/old-notes/")
 		if status == http.StatusNotFound && len(server.Scan().Apps) == 0 {
-			if !strings.Contains(body, "Dropserve could not find that app") {
+			if !strings.Contains(body, "Beacon could not find that app") {
 				t.Fatalf("not-found body is not friendly: %q", body)
 			}
 			return
@@ -134,7 +134,7 @@ func TestRenamedFolderChangesSlugWithinTwoSeconds(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(beforeRoot, "index.html"), []byte(appBody), 0o600); err != nil {
 		t.Fatalf("write app index: %v", err)
 	}
-	server, err := dropserver.New(scanner.Options{Roots: []string{root}})
+	server, err := beaconr.New(scanner.Options{Roots: []string{root}})
 	if err != nil {
 		t.Fatalf("create live server: %v", err)
 	}
@@ -177,7 +177,7 @@ func TestRapidChangesAreDebounced(t *testing.T) {
 	t.Parallel()
 
 	root := t.TempDir()
-	server, err := dropserver.New(scanner.Options{Roots: []string{root}})
+	server, err := beaconr.New(scanner.Options{Roots: []string{root}})
 	if err != nil {
 		t.Fatalf("create live server: %v", err)
 	}
@@ -240,7 +240,7 @@ func TestReconcileCatchesChangesWhileWatcherIsStopped(t *testing.T) {
 	t.Parallel()
 
 	root := t.TempDir()
-	server, err := dropserver.New(scanner.Options{Roots: []string{root}})
+	server, err := beaconr.New(scanner.Options{Roots: []string{root}})
 	if err != nil {
 		t.Fatalf("create live server: %v", err)
 	}
@@ -279,7 +279,7 @@ func TestSSEStreamSurvivesThreeAppChanges(t *testing.T) {
 	t.Parallel()
 
 	root := t.TempDir()
-	server, err := dropserver.New(scanner.Options{Roots: []string{root}})
+	server, err := beaconr.New(scanner.Options{Roots: []string{root}})
 	if err != nil {
 		t.Fatalf("create live server: %v", err)
 	}
@@ -296,7 +296,7 @@ func TestSSEStreamSurvivesThreeAppChanges(t *testing.T) {
 	request, err := http.NewRequestWithContext(
 		streamContext,
 		http.MethodGet,
-		httpServer.URL+"/_dropserve/api/events",
+		httpServer.URL+"/_beacon/api/events",
 		nil,
 	)
 	if err != nil {
@@ -353,7 +353,7 @@ func TestMissingRootIsPickedUpWhenItAppears(t *testing.T) {
 
 	parent := t.TempDir()
 	root := filepath.Join(parent, "Apps")
-	server, err := dropserver.New(scanner.Options{Roots: []string{root}})
+	server, err := beaconr.New(scanner.Options{Roots: []string{root}})
 	if err != nil {
 		t.Fatalf("create server with missing root: %v", err)
 	}
@@ -394,7 +394,7 @@ func TestSyncRootWarningAppearsInDashboardStatus(t *testing.T) {
 	if err := os.MkdirAll(root, 0o750); err != nil {
 		t.Fatalf("create sync-backed root: %v", err)
 	}
-	server, err := dropserver.New(scanner.Options{Roots: []string{root}})
+	server, err := beaconr.New(scanner.Options{Roots: []string{root}})
 	if err != nil {
 		t.Fatalf("create sync-root server: %v", err)
 	}
@@ -409,7 +409,7 @@ func TestSyncRootWarningAppearsInDashboardStatus(t *testing.T) {
 	request, err := http.NewRequestWithContext(
 		context.Background(),
 		http.MethodGet,
-		httpServer.URL+"/_dropserve/api/status",
+		httpServer.URL+"/_beacon/api/status",
 		nil,
 	)
 	if err != nil {
@@ -429,7 +429,7 @@ func TestSyncRootWarningAppearsInDashboardStatus(t *testing.T) {
 		t.Fatalf("decode dashboard status: %v", err)
 	}
 	warnings := strings.Join(status.Warnings, "\n")
-	if !strings.Contains(warnings, root) || !strings.Contains(warnings, `%USERPROFILE%\Dropserve`) {
+	if !strings.Contains(warnings, root) || !strings.Contains(warnings, `%USERPROFILE%\Beacon`) {
 		t.Fatalf("dashboard warnings = %q, want root and recommended location", warnings)
 	}
 }

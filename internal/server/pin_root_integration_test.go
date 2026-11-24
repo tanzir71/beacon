@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/tanzir71/dropserve/internal/scanner"
-	dropserver "github.com/tanzir71/dropserve/internal/server"
+	"github.com/tanzir71/beacon/internal/scanner"
+	beaconr "github.com/tanzir71/beacon/internal/server"
 )
 
 func TestConfiguredAppCanOwnRootWithoutShadowingDashboardOrOtherApps(t *testing.T) {
@@ -27,7 +27,7 @@ func TestConfiguredAppCanOwnRootWithoutShadowingDashboardOrOtherApps(t *testing.
 	if err := os.WriteFile(filepath.Join(root, "landing", "asset.txt"), []byte("root asset"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	server, err := dropserver.NewWithOptions(dropserver.Options{Scanner: scanner.Options{Roots: []string{root}}, PinToRoot: "landing"})
+	server, err := beaconr.NewWithOptions(beaconr.Options{Scanner: scanner.Options{Roots: []string{root}}, PinToRoot: "landing"})
 	if err != nil {
 		t.Fatalf("create pinned-root server: %v", err)
 	}
@@ -40,9 +40,9 @@ func TestConfiguredAppCanOwnRootWithoutShadowingDashboardOrOtherApps(t *testing.
 		{path: "/", want: "pinned root"},
 		{path: "/asset.txt", want: "root asset"},
 		{path: "/notes/", want: "other app"},
-		{path: "/_dropserve/", want: "What do you want to open?"},
+		{path: "/_beacon/", want: "What do you want to open?"},
 	} {
-		request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://dropserve.test"+test.path, nil)
+		request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://beacon.test"+test.path, nil)
 		request.RemoteAddr = "127.0.0.1:5000"
 		response := httptest.NewRecorder()
 		server.Handler().ServeHTTP(response, request)

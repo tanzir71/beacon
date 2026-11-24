@@ -15,11 +15,11 @@ function Get-ResponseText {
 
 $repositoryRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 if ($Binary -eq "") {
-    $Binary = Join-Path $repositoryRoot "bin\dropserve-cli.exe"
+    $Binary = Join-Path $repositoryRoot "bin\beacon-cli.exe"
 }
 $binaryPath = (Resolve-Path -LiteralPath $Binary).Path
 $fixturesRoot = (Resolve-Path -LiteralPath (Join-Path $repositoryRoot "testdata\fixtures")).Path
-$workDirectory = Join-Path ([System.IO.Path]::GetTempPath()) ("dropserve-m4-smoke-" + [Guid]::NewGuid().ToString("N"))
+$workDirectory = Join-Path ([System.IO.Path]::GetTempPath()) ("beacon-m4-smoke-" + [Guid]::NewGuid().ToString("N"))
 $null = New-Item -ItemType Directory -Path $workDirectory
 $statePath = Join-Path $workDirectory "state.json"
 
@@ -39,33 +39,33 @@ try {
     $deadline = [DateTime]::UtcNow.AddSeconds(45)
     while (-not $readyLine.IsCompleted -and [DateTime]::UtcNow -lt $deadline) {
         if ($process.HasExited) {
-            throw "Dropserve exited before becoming ready: $($process.StandardError.ReadToEnd())"
+            throw "Beacon exited before becoming ready: $($process.StandardError.ReadToEnd())"
         }
         $null = $readyLine.Wait(250)
     }
-    if (-not $readyLine.IsCompleted -or $readyLine.Result -notmatch '^Dropserve is ready at (http://\S+)$') {
-        throw "Dropserve did not print a ready address within 45 seconds"
+    if (-not $readyLine.IsCompleted -or $readyLine.Result -notmatch '^Beacon is ready at (http://\S+)$') {
+        throw "Beacon did not print a ready address within 45 seconds"
     }
     $address = $Matches[1]
 
     $node = Invoke-WebRequest -Uri "$address/node/" -UseBasicParsing
-    if ($node.StatusCode -ne 200 -or (Get-ResponseText $node) -ne "Dropserve Node fixture") {
+    if ($node.StatusCode -ne 200 -or (Get-ResponseText $node) -ne "Beacon Node fixture") {
         throw "Node fixture returned an unexpected response"
     }
     $python = Invoke-WebRequest -Uri "$address/python/" -UseBasicParsing
-    if ($python.StatusCode -ne 200 -or (Get-ResponseText $python) -ne "Dropserve Python fixture") {
+    if ($python.StatusCode -ne 200 -or (Get-ResponseText $python) -ne "Beacon Python fixture") {
         throw "Python fixture returned an unexpected response"
     }
     $dashboard = Invoke-WebRequest -Uri "$address/" -UseBasicParsing
     if ($dashboard.StatusCode -ne 200 -or $dashboard.Content -notmatch 'id="log-dialog"') {
         throw "Dashboard did not render the command log viewer"
     }
-    $apps = Invoke-RestMethod -Uri "$address/_dropserve/api/apps"
+    $apps = Invoke-RestMethod -Uri "$address/_beacon/api/apps"
     $broken = @($apps | Where-Object { $_.slug -eq "broken" })
     if ($broken.Count -ne 1 -or $broken[0].status -ne "crashed") {
         throw "Broken fixture was not isolated in crashed state"
     }
-    $logs = Invoke-RestMethod -Uri "$address/_dropserve/api/logs/broken"
+    $logs = Invoke-RestMethod -Uri "$address/_beacon/api/logs/broken"
     if ($logs.status -ne "crashed" -or $logs.attempts -ne 5 -or $logs.logs -notmatch "intentional fixture failure") {
         throw "Broken fixture logs did not preserve all five failed starts"
     }

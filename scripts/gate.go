@@ -1,4 +1,4 @@
-// Command gate runs Dropserve's portable build and verification targets.
+// Command gate runs Beacon's portable build and verification targets.
 package main
 
 import (
@@ -17,7 +17,7 @@ import (
 	"strings"
 )
 
-const modulePath = "github.com/tanzir71/dropserve"
+const modulePath = "github.com/tanzir71/beacon"
 
 func main() {
 	if len(os.Args) != 2 {
@@ -35,7 +35,7 @@ func main() {
 	case "lint":
 		err = lint()
 	case "run":
-		err = runGo("run", "./cmd/dropserve")
+		err = runGo("run", "./cmd/beacon")
 	default:
 		err = fmt.Errorf("unknown gate target %q", os.Args[1])
 	}
@@ -162,14 +162,14 @@ func crossBuild() error {
 }
 
 func trayBuild() error {
-	directory, err := os.MkdirTemp("", "dropserve-tray-build-")
+	directory, err := os.MkdirTemp("", "beacon-tray-build-")
 	if err != nil {
 		return err
 	}
 	defer func() {
 		_ = os.RemoveAll(directory)
 	}()
-	output := filepath.Join(directory, "dropserve.exe")
+	output := filepath.Join(directory, "beacon.exe")
 	// #nosec G204 -- executable and arguments are the fixed optional tray build; output is a private temporary path.
 	cmd := exec.CommandContext(
 		context.Background(),
@@ -178,7 +178,7 @@ func trayBuild() error {
 		"-trimpath",
 		"-tags", "tray",
 		"-o", output,
-		"./cmd/dropserve",
+		"./cmd/beacon",
 	)
 	cmd.Env = withEnv(os.Environ(), map[string]string{
 		"CGO_ENABLED": "0",
@@ -209,7 +209,7 @@ func build(outputDir string) error {
 			arguments,
 			"-ldflags", ldflags,
 			"-o", filepath.Join(outputDir, spec.name),
-			"./cmd/dropserve",
+			"./cmd/beacon",
 		)
 		if err := runGo(arguments...); err != nil {
 			return err
@@ -227,27 +227,27 @@ type buildSpec struct {
 func buildSpecs(goos string) []buildSpec {
 	if goos == "windows" {
 		return []buildSpec{
-			{name: "dropserve.exe", extraLinkFlags: "-H=windowsgui", tags: "tray"},
-			{name: "dropserve-cli.exe"},
+			{name: "beacon.exe", extraLinkFlags: "-H=windowsgui", tags: "tray"},
+			{name: "beacon-cli.exe"},
 		}
 	}
-	return []buildSpec{{name: "dropserve"}}
+	return []buildSpec{{name: "beacon"}}
 }
 
 func testVersionInjection() error {
-	dir, err := os.MkdirTemp("", "dropserve-version-")
+	dir, err := os.MkdirTemp("", "beacon-version-")
 	if err != nil {
 		return err
 	}
 	defer func() {
 		_ = os.RemoveAll(dir)
 	}()
-	name := "dropserve"
+	name := "beacon"
 	if runtime.GOOS == "windows" {
 		name += ".exe"
 	}
 	binary := filepath.Join(dir, name)
-	if err := runGo("build", "-ldflags", linkFlags("1.2.3", "abc1234"), "-o", binary, "./cmd/dropserve"); err != nil {
+	if err := runGo("build", "-ldflags", linkFlags("1.2.3", "abc1234"), "-o", binary, "./cmd/beacon"); err != nil {
 		return err
 	}
 	// #nosec G204 -- binary is the executable built into the private temporary directory above.
@@ -255,7 +255,7 @@ func testVersionInjection() error {
 	if err != nil {
 		return fmt.Errorf("run version command: %w: %s", err, output)
 	}
-	if got, want := strings.TrimSpace(string(output)), "dropserve 1.2.3 (abc1234)"; got != want {
+	if got, want := strings.TrimSpace(string(output)), "beacon 1.2.3 (abc1234)"; got != want {
 		return fmt.Errorf("version output %q, want %q", got, want)
 	}
 	return nil

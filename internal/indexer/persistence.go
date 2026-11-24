@@ -67,7 +67,7 @@ func Save(path string, entries []Entry) error {
 
 // Load reads a previously persisted index, returning an empty slice when absent.
 func Load(path string) ([]Entry, error) {
-	// #nosec G304 -- path is Dropserve's configured state cache, not request data.
+	// #nosec G304 -- path is Beacon's configured state cache, not request data.
 	content, err := os.ReadFile(path)
 	if errors.Is(err, os.ErrNotExist) {
 		return []Entry{}, nil

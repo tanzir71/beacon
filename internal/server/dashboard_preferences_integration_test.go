@@ -11,9 +11,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/tanzir71/dropserve/internal/indexer"
-	"github.com/tanzir71/dropserve/internal/scanner"
-	dropserver "github.com/tanzir71/dropserve/internal/server"
+	"github.com/tanzir71/beacon/internal/indexer"
+	"github.com/tanzir71/beacon/internal/scanner"
+	beaconr "github.com/tanzir71/beacon/internal/server"
 )
 
 func TestDashboardPreferencesPersistAndSortByPinThenLastUse(t *testing.T) {
@@ -25,13 +25,13 @@ func TestDashboardPreferencesPersistAndSortByPinThenLastUse(t *testing.T) {
 		t.Fatal(err)
 	}
 	indexPath := filepath.Join(t.TempDir(), "index.json")
-	options := dropserver.Options{Scanner: scanner.Options{Roots: []string{root}}, IndexPath: indexPath}
-	server, err := dropserver.NewWithOptions(options)
+	options := beaconr.Options{Scanner: scanner.Options{Roots: []string{root}}, IndexPath: indexPath}
+	server, err := beaconr.NewWithOptions(options)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://dropserve.test/alpha/", nil)
+	request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://beacon.test/alpha/", nil)
 	response := httptest.NewRecorder()
 	server.Handler().ServeHTTP(response, request)
 	deadline := time.Now().Add(3 * time.Second)
@@ -59,7 +59,7 @@ func TestDashboardPreferencesPersistAndSortByPinThenLastUse(t *testing.T) {
 		t.Fatalf("close first server: %v", err)
 	}
 
-	reloaded, err := dropserver.NewWithOptions(options)
+	reloaded, err := beaconr.NewWithOptions(options)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -70,9 +70,9 @@ func TestDashboardPreferencesPersistAndSortByPinThenLastUse(t *testing.T) {
 	}
 }
 
-func postPreference(t *testing.T, server *dropserver.Server, slug, body string) {
+func postPreference(t *testing.T, server *beaconr.Server, slug, body string) {
 	t.Helper()
-	statusRequest := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://dropserve.test/_dropserve/api/status", nil)
+	statusRequest := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://beacon.test/_beacon/api/status", nil)
 	statusResponse := httptest.NewRecorder()
 	server.Handler().ServeHTTP(statusResponse, statusRequest)
 	var status struct {
@@ -81,9 +81,9 @@ func postPreference(t *testing.T, server *dropserver.Server, slug, body string) 
 	if err := json.Unmarshal(statusResponse.Body.Bytes(), &status); err != nil {
 		t.Fatal(err)
 	}
-	request := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "http://dropserve.test/_dropserve/api/apps/"+slug+"/settings", bytes.NewBufferString(body))
-	request.Header.Set("Origin", "http://dropserve.test")
-	request.Header.Set("X-Dropserve-CSRF", status.CSRFToken)
+	request := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "http://beacon.test/_beacon/api/apps/"+slug+"/settings", bytes.NewBufferString(body))
+	request.Header.Set("Origin", "http://beacon.test")
+	request.Header.Set("X-Beacon-CSRF", status.CSRFToken)
 	response := httptest.NewRecorder()
 	server.Handler().ServeHTTP(response, request)
 	if response.Code != http.StatusNoContent {
@@ -91,13 +91,13 @@ func postPreference(t *testing.T, server *dropserver.Server, slug, body string) 
 	}
 }
 
-func preferenceEntries(t *testing.T, server *dropserver.Server, includeHidden bool) []indexer.Entry {
+func preferenceEntries(t *testing.T, server *beaconr.Server, includeHidden bool) []indexer.Entry {
 	t.Helper()
-	path := "/_dropserve/api/apps"
+	path := "/_beacon/api/apps"
 	if includeHidden {
 		path += "?include_hidden=1"
 	}
-	request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://dropserve.test"+path, nil)
+	request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://beacon.test"+path, nil)
 	response := httptest.NewRecorder()
 	server.Handler().ServeHTTP(response, request)
 	if response.Code != http.StatusOK {

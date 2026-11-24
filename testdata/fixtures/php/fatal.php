@@ -1,2 +1,2 @@
 <?php
-undefined_dropserve_function();
+undefined_beacon_function();

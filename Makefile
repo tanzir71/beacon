@@ -1,5 +1,7 @@
 .PHONY: check build test lint run clean
 
+REPO_SLUG := tanzir71/beacon
+
 check:
 	go run ./scripts/gate.go check
 
@@ -17,4 +19,3 @@ run:
 
 clean:
 	go clean ./...
-

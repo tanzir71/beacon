@@ -9,7 +9,7 @@ import (
 
 func authorizeTestMutation(request *http.Request, token string) {
 	request.Header.Set("Origin", "http://"+request.Host)
-	request.Header.Set("X-Dropserve-CSRF", token)
+	request.Header.Set("X-Beacon-CSRF", token)
 }
 
 func TestMutationsRequireSameOriginInAdditionToCSRF(t *testing.T) {
@@ -18,9 +18,9 @@ func TestMutationsRequireSameOriginInAdditionToCSRF(t *testing.T) {
 		t.Fatalf("create dashboard: %v", err)
 	}
 	dashboard := httpHandler.(*handler)
-	request := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "http://dropserve.test/_dropserve/api/network-change/dismiss", nil)
+	request := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "http://beacon.test/_beacon/api/network-change/dismiss", nil)
 	request.Header.Set("Origin", "http://attacker.example")
-	request.Header.Set("X-Dropserve-CSRF", dashboard.csrfToken)
+	request.Header.Set("X-Beacon-CSRF", dashboard.csrfToken)
 	response := httptest.NewRecorder()
 	dashboard.ServeHTTP(response, request)
 	if response.Code != http.StatusForbidden {

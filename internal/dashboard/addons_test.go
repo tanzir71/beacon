@@ -23,7 +23,7 @@ func TestAddonActionsRequireCSRFAndRemainExplicit(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create add-ons dashboard: %v", err)
 	}
-	statusRequest := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://dropserve.test/_dropserve/api/status", nil)
+	statusRequest := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://beacon.test/_beacon/api/status", nil)
 	statusResponse := httptest.NewRecorder()
 	handler.ServeHTTP(statusResponse, statusRequest)
 	var status struct {
@@ -34,14 +34,14 @@ func TestAddonActionsRequireCSRFAndRemainExplicit(t *testing.T) {
 	}
 
 	body := []byte(`{"action":"install"}`)
-	unauthenticated := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "http://dropserve.test/_dropserve/api/addons/php", bytes.NewReader(body))
+	unauthenticated := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "http://beacon.test/_beacon/api/addons/php", bytes.NewReader(body))
 	unauthenticatedResponse := httptest.NewRecorder()
 	handler.ServeHTTP(unauthenticatedResponse, unauthenticated)
 	if unauthenticatedResponse.Code != http.StatusForbidden || len(actions) != 0 {
 		t.Fatalf("unauthenticated add-on action = %d actions=%v", unauthenticatedResponse.Code, actions)
 	}
 
-	request := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "http://dropserve.test/_dropserve/api/addons/php", bytes.NewReader(body))
+	request := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "http://beacon.test/_beacon/api/addons/php", bytes.NewReader(body))
 	authorizeTestMutation(request, status.CSRFToken)
 	response := httptest.NewRecorder()
 	handler.ServeHTTP(response, request)

@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/tanzir71/dropserve/internal/config"
+	"github.com/tanzir71/beacon/internal/config"
 )
 
 func TestStateFileAloneControlsFirstRunAndExampleCopy(t *testing.T) {
@@ -26,14 +26,14 @@ func TestStateFileAloneControlsFirstRunAndExampleCopy(t *testing.T) {
 		StatePath:       statePath,
 		ConfigPath:      configPath,
 		DefaultAppsRoot: appsRoot,
-		Executable:      filepath.Join(sandbox, "dropserve.exe"),
+		Executable:      filepath.Join(sandbox, "beacon.exe"),
 		OpenBrowser: func(address string) error {
 			opened <- address
 			return nil
 		},
 		EnableAutostart: func(executable string) error {
 			autostartCalls.Add(1)
-			if executable != filepath.Join(sandbox, "dropserve.exe") {
+			if executable != filepath.Join(sandbox, "beacon.exe") {
 				t.Fatalf("autostart executable = %q", executable)
 			}
 			return nil
@@ -114,7 +114,7 @@ func TestStateFileAloneControlsFirstRunAndExampleCopy(t *testing.T) {
 	if response.StatusCode != http.StatusOK {
 		t.Fatalf("submit status = %d, want 200", response.StatusCode)
 	}
-	if !strings.Contains(string(completionPage), "Dropserve is starting") {
+	if !strings.Contains(string(completionPage), "Beacon is starting") {
 		t.Fatalf("completion page = %q", completionPage)
 	}
 
@@ -138,7 +138,7 @@ func TestStateFileAloneControlsFirstRunAndExampleCopy(t *testing.T) {
 	}
 	examplePath := filepath.Join(appsRoot, ExampleDirectory, "index.html")
 	// #nosec G304 -- examplePath is inside this test's private temporary directory.
-	if data, err := os.ReadFile(examplePath); err != nil || !strings.Contains(string(data), "Welcome to Dropserve") {
+	if data, err := os.ReadFile(examplePath); err != nil || !strings.Contains(string(data), "Welcome to Beacon") {
 		t.Fatalf("example app = %q, %v", data, err)
 	}
 	configuration, err := config.Load(configPath)

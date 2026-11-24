@@ -14,10 +14,10 @@ import (
 	"sync"
 
 	"github.com/getlantern/systray"
-	"github.com/tanzir71/dropserve/internal/autostart"
-	"github.com/tanzir71/dropserve/internal/dashboard"
-	"github.com/tanzir71/dropserve/internal/launch"
-	"github.com/tanzir71/dropserve/internal/traymenu"
+	"github.com/tanzir71/beacon/internal/autostart"
+	"github.com/tanzir71/beacon/internal/dashboard"
+	"github.com/tanzir71/beacon/internal/launch"
+	"github.com/tanzir71/beacon/internal/traymenu"
 )
 
 type trayRun struct {
@@ -44,7 +44,7 @@ func runDefaultMode(ctx context.Context, options defaultModeOptions) int {
 	options.ServeArguments = removeOpenFlag(options.ServeArguments)
 	server := &trayServer{parent: ctx, options: options}
 	if _, err := server.start(); err != nil {
-		_, _ = fmt.Fprintf(options.Stderr, "Dropserve could not start for the tray: %v\n", err)
+		_, _ = fmt.Fprintf(options.Stderr, "Beacon could not start for the tray: %v\n", err)
 		return 1
 	}
 
@@ -247,21 +247,21 @@ func (server *trayServer) iconStateLocked() traymenu.State {
 func configureTray(ctx context.Context, server *trayServer) {
 	labels := traymenu.Labels()
 	server.markTrayReady()
-	systray.SetTitle("Dropserve")
-	systray.SetTooltip("Dropserve is serving your local apps")
-	openDashboard := systray.AddMenuItem(labels[0], "Open the Dropserve dashboard")
-	viewUpdate := systray.AddMenuItem(traymenu.UpdateLabel(""), "Open the available Dropserve release page")
+	systray.SetTitle("Beacon")
+	systray.SetTooltip("Beacon is serving your local apps")
+	openDashboard := systray.AddMenuItem(labels[0], "Open the Beacon dashboard")
+	viewUpdate := systray.AddMenuItem(traymenu.UpdateLabel(""), "Open the available Beacon release page")
 	viewUpdate.Hide()
 	server.attachUpdateItem(viewUpdate)
 	openApps := systray.AddMenuItem(labels[1], "Open your Apps folder")
-	copyLink := systray.AddMenuItem(labels[2], "Copy this computer's Dropserve address")
+	copyLink := systray.AddMenuItem(labels[2], "Copy this computer's Beacon address")
 	systray.AddSeparator()
 	pause := systray.AddMenuItem(labels[3], "Temporarily stop serving apps")
 	autostartEnabled, _ := autostart.Enabled()
-	startAtLogin := systray.AddMenuItemCheckbox(labels[4], "Start Dropserve when you log in", autostartEnabled)
+	startAtLogin := systray.AddMenuItemCheckbox(labels[4], "Start Beacon when you log in", autostartEnabled)
 	systray.AddSeparator()
 	runDoctor := systray.AddMenuItem(labels[5], "Open a complete support report")
-	quit := systray.AddMenuItem(labels[6], "Stop Dropserve and close the tray")
+	quit := systray.AddMenuItem(labels[6], "Stop Beacon and close the tray")
 
 	go func() {
 		for {
@@ -332,17 +332,17 @@ func copyText(ctx context.Context, value string) error {
 }
 
 func openDoctorReport(ctx context.Context, options defaultModeOptions) {
-	// #nosec G204 -- executable is the running Dropserve binary and arguments are fixed local paths.
+	// #nosec G204 -- executable is the running Beacon binary and arguments are fixed local paths.
 	command := exec.CommandContext(ctx, options.Executable, "doctor", "--config", options.ConfigPath, "--state", options.StatePath)
 	output, err := command.CombinedOutput()
 	if err != nil && len(output) == 0 {
-		output = []byte(fmt.Sprintf("Dropserve doctor could not run: %v\n", err))
+		output = []byte(fmt.Sprintf("Beacon doctor could not run: %v\n", err))
 	}
 	directory, err := os.UserCacheDir()
 	if err != nil {
 		return
 	}
-	directory = filepath.Join(directory, "Dropserve")
+	directory = filepath.Join(directory, "Beacon")
 	if err := os.MkdirAll(directory, 0o700); err != nil {
 		return
 	}

@@ -1,17 +1,17 @@
 <!doctype html>
-<html lang="en" data-dropserve-theme="auto">
+<html lang="en" data-beacon-theme="auto">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light dark">
-  <title>Dropserve</title>
-  <link rel="stylesheet" href="/_dropserve/app.css">
+  <title>Beacon</title>
+  <link rel="stylesheet" href="/_beacon/app.css">
 </head>
 <body>
   <header class="topbar">
-    <a class="brand" href="/_dropserve/" aria-label="Dropserve home">
+    <a class="brand" href="/_beacon/" aria-label="Beacon home">
       <span class="brand-mark" aria-hidden="true">D</span>
-      <span><strong>Dropserve</strong><small>Yours, from this computer.</small></span>
+      <span><strong>Beacon</strong><small>Yours, from this computer.</small></span>
     </a>
     <div class="topbar-actions">
       <button id="addons-toggle" class="sharing-button" type="button" aria-label="Open add-ons" aria-controls="addons-panel" aria-expanded="false">Add-ons</button>
@@ -41,12 +41,12 @@
       <section id="local-https" class="local-https" aria-labelledby="local-https-title">
         <h3 id="local-https-title">Local HTTPS</h3>
         <p><strong>Prefer Tailscale</strong> for private HTTPS when you can. It needs no certificate changes on your other devices.</p>
-        <p>This adds a security certificate created on this computer to the list your browsers trust, so they stop warning about Dropserve's HTTPS. It affects only this computer. You can remove that trust any time.</p>
+        <p>This adds a security certificate created on this computer to the list your browsers trust, so they stop warning about Beacon's HTTPS. It affects only this computer. You can remove that trust any time.</p>
         <p id="local-https-state" class="local-https-state" aria-live="polite">Checking local HTTPS…</p>
         <div class="local-https-actions">
           <button id="local-https-toggle" class="mini-button" type="button">Enable local HTTPS</button>
           <button id="local-trust-toggle" class="mini-button" type="button" hidden>Trust on this computer</button>
-          <a id="local-root-download" class="mini-button" href="/_dropserve/api/https/root.pem" download hidden>Download certificate</a>
+          <a id="local-root-download" class="mini-button" href="/_beacon/api/https/root.pem" download hidden>Download certificate</a>
         </div>
       </section>
       <section class="funnel-apps-section" aria-labelledby="funnel-apps-title">
@@ -76,8 +76,8 @@
 
     <aside id="update-notice" class="notice" hidden>
       <span aria-hidden="true">↑</span>
-      <p>A newer Dropserve release is available.</p>
-      <a href="https://github.com/tanzir71/dropserve/releases" target="_blank" rel="noreferrer">View release</a>
+      <p>A newer Beacon release is available.</p>
+      <a href="https://github.com/tanzir71/beacon/releases" target="_blank" rel="noreferrer">View release</a>
     </aside>
 
     <aside id="public-sharing-warning" class="notice public-warning" role="alert" hidden>
@@ -87,7 +87,7 @@
 
     <aside id="address-change-warning" class="notice" hidden>
       <span aria-hidden="true">i</span>
-      <p>Your LAN address changed from <strong data-old-lan-ip></strong> to <strong data-new-lan-ip></strong>. <a href="/_dropserve/help/dhcp-reservation">Keep a stable address with a DHCP reservation.</a></p>
+      <p>Your LAN address changed from <strong data-old-lan-ip></strong> to <strong data-new-lan-ip></strong>. <a href="/_beacon/help/dhcp-reservation">Keep a stable address with a DHCP reservation.</a></p>
       <button type="button">Dismiss</button>
     </aside>
 
@@ -106,7 +106,7 @@
       <div id="empty-state" class="empty-state" hidden>
         <div class="empty-icon" aria-hidden="true">＋</div>
         <h2>Drop in your first app</h2>
-        <p>Put any folder with an <code>index.html</code> into your Dropserve Apps folder. It will appear here automatically.</p>
+        <p>Put any folder with an <code>index.html</code> into your Beacon Apps folder. It will appear here automatically.</p>
         <button type="button" id="open-apps-folder">Open Apps Folder</button>
       </div>
       <div id="error-state" class="empty-state error-state" hidden>
@@ -169,9 +169,9 @@
   </dialog>
 
   <footer>
-    <span><span class="online-dot" aria-hidden="true"></span> Dropserve is running</span>
-    <a href="/_dropserve/api/status">Status</a>
+    <span><span class="online-dot" aria-hidden="true"></span> Beacon is running</span>
+    <a href="/_beacon/api/status">Status</a>
   </footer>
-  <script src="/_dropserve/app.js" defer></script>
+  <script src="/_beacon/app.js" defer></script>
 </body>
 </html>

@@ -5,7 +5,7 @@ const wcagAATags = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
 
 async function openReadyDashboard(page) {
   await page.goto('/');
-  await expect(page.locator('body')).toContainText('Dropserve');
+  await expect(page.locator('body')).toContainText('Beacon');
   await expect(page.locator('#app-grid')).toHaveAttribute('aria-busy', 'false');
   await expect(page.locator('.app-card')).toHaveCount(1);
 }

@@ -5,7 +5,7 @@ param(
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
 
-function Start-Dropserve {
+function Start-Beacon {
     param(
         [string]$BinaryPath,
         [string]$AppsRoot,
@@ -26,20 +26,20 @@ function Start-Dropserve {
     $deadline = [DateTime]::UtcNow.AddSeconds(45)
     while (-not $readyLine.IsCompleted -and [DateTime]::UtcNow -lt $deadline) {
         if ($process.HasExited) {
-            throw "Dropserve exited before becoming ready: $($process.StandardError.ReadToEnd())"
+            throw "Beacon exited before becoming ready: $($process.StandardError.ReadToEnd())"
         }
         $null = $readyLine.Wait(250)
     }
-    if (-not $readyLine.IsCompleted -or $readyLine.Result -notmatch '^Dropserve is ready at (http://\S+)$') {
+    if (-not $readyLine.IsCompleted -or $readyLine.Result -notmatch '^Beacon is ready at (http://\S+)$') {
         if (-not $process.HasExited) {
             $process.Kill($true)
         }
-        throw "Dropserve did not print a ready address within 45 seconds"
+        throw "Beacon did not print a ready address within 45 seconds"
     }
     return [pscustomobject]@{ Process = $process; Address = $Matches[1] }
 }
 
-function Stop-Dropserve {
+function Stop-Beacon {
     param([System.Diagnostics.Process]$Process)
 
     if (-not $Process.HasExited) {
@@ -74,7 +74,7 @@ function Wait-ForSubpathApp {
     $deadline = [DateTime]::UtcNow.AddSeconds(45)
     while ([DateTime]::UtcNow -lt $deadline) {
         if ($Process.HasExited) {
-            throw "Dropserve exited while the subpath app was starting: $($Process.StandardError.ReadToEnd())"
+            throw "Beacon exited while the subpath app was starting: $($Process.StandardError.ReadToEnd())"
         }
         $response = $Client.GetAsync("$Address/subpath/redirect").GetAwaiter().GetResult()
         try {
@@ -92,12 +92,12 @@ function Wait-ForSubpathApp {
 
 $repositoryRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 if ($Binary -eq "") {
-    $Binary = Join-Path $repositoryRoot "bin\dropserve-cli.exe"
+    $Binary = Join-Path $repositoryRoot "bin\beacon-cli.exe"
 }
 $binaryPath = (Resolve-Path -LiteralPath $Binary).Path
 $fixturesRoot = (Resolve-Path -LiteralPath (Join-Path $repositoryRoot "testdata\fixtures")).Path
 $temporaryRoot = [System.IO.Path]::GetTempPath()
-$workDirectory = Join-Path $temporaryRoot ("dropserve-m5-smoke-" + [Guid]::NewGuid().ToString("N"))
+$workDirectory = Join-Path $temporaryRoot ("beacon-m5-smoke-" + [Guid]::NewGuid().ToString("N"))
 $appsRoot = Join-Path $workDirectory "apps"
 $statePath = Join-Path $workDirectory "state.json"
 $null = New-Item -ItemType Directory -Path $appsRoot
@@ -109,7 +109,7 @@ $client = [System.Net.Http.HttpClient]::new($handler)
 $run = $null
 
 try {
-    $run = Start-Dropserve -BinaryPath $binaryPath -AppsRoot $appsRoot -StatePath $statePath
+    $run = Start-Beacon -BinaryPath $binaryPath -AppsRoot $appsRoot -StatePath $statePath
     $address = $run.Address
     Wait-ForSubpathApp -Client $client -Process $run.Process -Address $address
 
@@ -164,7 +164,7 @@ try {
         $socket.Dispose()
     }
 
-    $apps = (Get-Text -Client $client -URL "$address/_dropserve/api/apps") | ConvertFrom-Json
+    $apps = (Get-Text -Client $client -URL "$address/_beacon/api/apps") | ConvertFrom-Json
     $absolute = @($apps | Where-Object { $_.slug -eq "absolute-paths" })
     if ($absolute.Count -ne 1 -or -not $absolute[0].prefers_own_port -or [string]::IsNullOrWhiteSpace($absolute[0].urls.own)) {
         throw "Absolute-path fixture did not prefer its own port"
@@ -174,15 +174,15 @@ try {
     if ($ownBody -notmatch 'Absolute paths fixture') {
         throw "Own-port URL did not serve the fixture at its root"
     }
-    $dashboardScript = Get-Text -Client $client -URL "$address/_dropserve/app.js"
+    $dashboardScript = Get-Text -Client $client -URL "$address/_beacon/app.js"
     if ($dashboardScript -notmatch 'This app expects to live at the root' -or $dashboardScript -notmatch 'Use the short URL anyway') {
         throw "Dashboard did not ship the own-port rescue explanation and action"
     }
 
-    Stop-Dropserve -Process $run.Process
+    Stop-Beacon -Process $run.Process
     $run = $null
-    $run = Start-Dropserve -BinaryPath $binaryPath -AppsRoot $appsRoot -StatePath $statePath
-    $restartedApps = (Get-Text -Client $client -URL "$($run.Address)/_dropserve/api/apps") | ConvertFrom-Json
+    $run = Start-Beacon -BinaryPath $binaryPath -AppsRoot $appsRoot -StatePath $statePath
+    $restartedApps = (Get-Text -Client $client -URL "$($run.Address)/_beacon/api/apps") | ConvertFrom-Json
     $restartedAbsolute = @($restartedApps | Where-Object { $_.slug -eq "absolute-paths" })
     if ($restartedAbsolute.Count -ne 1 -or [int]$restartedAbsolute[0].port -ne $firstPort) {
         throw "Own-port assignment changed after restart"
@@ -192,14 +192,14 @@ try {
 }
 finally {
     if ($null -ne $run) {
-        Stop-Dropserve -Process $run.Process
+        Stop-Beacon -Process $run.Process
     }
     $client.Dispose()
     $handler.Dispose()
     $resolvedTemporaryRoot = [System.IO.Path]::GetFullPath($temporaryRoot)
     $resolvedWorkDirectory = [System.IO.Path]::GetFullPath($workDirectory)
     if ($resolvedWorkDirectory.StartsWith($resolvedTemporaryRoot, [StringComparison]::OrdinalIgnoreCase) -and
-        (Split-Path -Leaf $resolvedWorkDirectory).StartsWith("dropserve-m5-smoke-", [StringComparison]::Ordinal)) {
+        (Split-Path -Leaf $resolvedWorkDirectory).StartsWith("beacon-m5-smoke-", [StringComparison]::Ordinal)) {
         Remove-Item -LiteralPath $resolvedWorkDirectory -Recurse -Force
     }
 }

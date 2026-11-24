@@ -14,8 +14,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/tanzir71/dropserve/internal/scanner"
-	dropserver "github.com/tanzir71/dropserve/internal/server"
+	"github.com/tanzir71/beacon/internal/scanner"
+	beaconr "github.com/tanzir71/beacon/internal/server"
 )
 
 func TestProcessTreeIsKilled(t *testing.T) {
@@ -29,7 +29,7 @@ func TestProcessTreeIsKilled(t *testing.T) {
 	if err != nil {
 		t.Fatalf("resolve process-tree fixture: %v", err)
 	}
-	server, err := dropserver.New(scanner.Options{Registered: []string{fixture}})
+	server, err := beaconr.New(scanner.Options{Registered: []string{fixture}})
 	if err != nil {
 		t.Fatalf("create process-tree server: %v", err)
 	}
@@ -86,7 +86,7 @@ func TestProcessTreeIsKilled(t *testing.T) {
 			return
 		}
 		if time.Now().After(deadline) {
-			t.Fatalf("grandchild PID %d survived Dropserve shutdown for five seconds", grandchildPID)
+			t.Fatalf("grandchild PID %d survived Beacon shutdown for five seconds", grandchildPID)
 		}
 		time.Sleep(50 * time.Millisecond)
 	}

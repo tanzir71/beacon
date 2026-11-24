@@ -14,7 +14,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/tanzir71/dropserve/internal/app"
+	"github.com/tanzir71/beacon/internal/app"
 )
 
 // ErrUnsafePath means a request tried to escape or reinterpret the app root.
@@ -180,7 +180,7 @@ func (server *handler) serveLooseFile(response http.ResponseWriter, request *htt
 }
 
 func serveNotFound(response http.ResponseWriter, request *http.Request) {
-	const content = `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>App not found · Dropserve</title><body><main><h1>Dropserve could not find that app or file.</h1><p>Check the address, or return to <a href="/">your apps</a>.</p></main></body></html>`
+	const content = `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>App not found · Beacon</title><body><main><h1>Beacon could not find that app or file.</h1><p>Check the address, or return to <a href="/">your apps</a>.</p></main></body></html>`
 	response.Header().Set("Content-Type", "text/html; charset=utf-8")
 	response.WriteHeader(http.StatusNotFound)
 	if request.Method == http.MethodHead {
@@ -216,7 +216,7 @@ func matchesETag(condition, etag string) bool {
 func serveDirectory(response http.ResponseWriter, request *http.Request, directory *os.File) {
 	entries, err := directory.ReadDir(-1)
 	if err != nil {
-		http.Error(response, "Dropserve could not read this directory.", http.StatusInternalServerError)
+		http.Error(response, "Beacon could not read this directory.", http.StatusInternalServerError)
 		return
 	}
 	sort.Slice(entries, func(first, second int) bool {

@@ -14,7 +14,7 @@ func TestTaskXMLUsesSafePerUserLogonSettings(t *testing.T) {
 
 	data, err := makeTaskXML(
 		`WORKSTATION\casey`,
-		`C:\Program Files\Dropserve & Tools\dropserve.exe`,
+		`C:\Program Files\Beacon & Tools\beacon.exe`,
 	)
 	if err != nil {
 		t.Fatalf("make task XML: %v", err)
@@ -36,7 +36,7 @@ func TestTaskXMLUsesSafePerUserLogonSettings(t *testing.T) {
 		`<StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>`,
 		`<Interval>PT1M</Interval>`,
 		`<Count>3</Count>`,
-		`<Command>C:\Program Files\Dropserve &amp; Tools\dropserve.exe</Command>`,
+		`<Command>C:\Program Files\Beacon &amp; Tools\beacon.exe</Command>`,
 		`<Arguments>--background</Arguments>`,
 	}
 	for _, want := range wants {

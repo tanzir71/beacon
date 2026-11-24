@@ -17,11 +17,11 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"github.com/tanzir71/dropserve/internal/config"
-	"github.com/tanzir71/dropserve/internal/discovery"
-	"github.com/tanzir71/dropserve/internal/launch"
-	"github.com/tanzir71/dropserve/internal/state"
-	"github.com/tanzir71/dropserve/internal/supervisor"
+	"github.com/tanzir71/beacon/internal/config"
+	"github.com/tanzir71/beacon/internal/discovery"
+	"github.com/tanzir71/beacon/internal/launch"
+	"github.com/tanzir71/beacon/internal/state"
+	"github.com/tanzir71/beacon/internal/supervisor"
 )
 
 const maximumCLIResponse = 4 << 20
@@ -45,7 +45,7 @@ func newLocalAPI(statePath string) (*localAPI, error) {
 		return nil, err
 	}
 	if snapshot.HTTPPort < 1 || snapshot.HTTPPort > 65535 {
-		return nil, errors.New("dropserve is not running; no local HTTP port is recorded")
+		return nil, errors.New("beacon is not running; no local HTTP port is recorded")
 	}
 	return localAPIForPort(snapshot.HTTPPort), nil
 }
@@ -59,7 +59,7 @@ func localAPIForPort(port int) *localAPI {
 }
 
 func (api *localAPI) get(ctx context.Context, path string, result any) error {
-	// #nosec G704 -- baseURL is fixed to validated loopback state and callers supply only Dropserve-owned API paths.
+	// #nosec G704 -- baseURL is fixed to validated loopback state and callers supply only Beacon-owned API paths.
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, api.baseURL+path, nil)
 	if err != nil {
 		return err
@@ -67,14 +67,14 @@ func (api *localAPI) get(ctx context.Context, path string, result any) error {
 	// #nosec G704 -- the transport has no proxy and the request authority is validated loopback state.
 	response, err := api.client.Do(request)
 	if err != nil {
-		return fmt.Errorf("reach the running Dropserve server: %w", err)
+		return fmt.Errorf("reach the running Beacon server: %w", err)
 	}
 	defer func() { _ = response.Body.Close() }()
 	if response.StatusCode != http.StatusOK {
 		return responseError(response)
 	}
 	if err := json.NewDecoder(io.LimitReader(response.Body, maximumCLIResponse)).Decode(result); err != nil {
-		return fmt.Errorf("decode Dropserve response: %w", err)
+		return fmt.Errorf("decode Beacon response: %w", err)
 	}
 	return nil
 }
@@ -84,11 +84,11 @@ func (api *localAPI) post(ctx context.Context, path string, payload any) error {
 		var status struct {
 			CSRFToken string `json:"csrf_token"`
 		}
-		if err := api.get(ctx, "/_dropserve/api/status", &status); err != nil {
+		if err := api.get(ctx, "/_beacon/api/status", &status); err != nil {
 			return err
 		}
 		if status.CSRFToken == "" {
-			return errors.New("the running Dropserve server did not provide a security token")
+			return errors.New("the running Beacon server did not provide a security token")
 		}
 		api.token = status.CSRFToken
 	}
@@ -96,18 +96,18 @@ func (api *localAPI) post(ctx context.Context, path string, payload any) error {
 	if err != nil {
 		return err
 	}
-	// #nosec G704 -- baseURL is fixed to validated loopback state and callers supply only Dropserve-owned API paths.
+	// #nosec G704 -- baseURL is fixed to validated loopback state and callers supply only Beacon-owned API paths.
 	request, err := http.NewRequestWithContext(ctx, http.MethodPost, api.baseURL+path, bytes.NewReader(body))
 	if err != nil {
 		return err
 	}
 	request.Header.Set("Content-Type", "application/json")
 	request.Header.Set("Origin", api.baseURL)
-	request.Header.Set("X-Dropserve-CSRF", api.token)
+	request.Header.Set("X-Beacon-CSRF", api.token)
 	// #nosec G704 -- the transport has no proxy and the request authority is validated loopback state.
 	response, err := api.client.Do(request)
 	if err != nil {
-		return fmt.Errorf("reach the running Dropserve server: %w", err)
+		return fmt.Errorf("reach the running Beacon server: %w", err)
 	}
 	defer func() { _ = response.Body.Close() }()
 	if response.StatusCode != http.StatusNoContent {
@@ -117,13 +117,13 @@ func (api *localAPI) post(ctx context.Context, path string, payload any) error {
 }
 
 func (api *localAPI) health(ctx context.Context) error {
-	request, err := http.NewRequestWithContext(ctx, http.MethodGet, api.baseURL+"/_dropserve/healthz", nil)
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, api.baseURL+"/_beacon/healthz", nil)
 	if err != nil {
 		return err
 	}
 	response, err := api.client.Do(request)
 	if err != nil {
-		return fmt.Errorf("reach the running Dropserve server: %w", err)
+		return fmt.Errorf("reach the running Beacon server: %w", err)
 	}
 	defer func() { _ = response.Body.Close() }()
 	body, readErr := io.ReadAll(io.LimitReader(response.Body, 16))
@@ -139,27 +139,27 @@ func responseError(response *http.Response) error {
 	if detail == "" {
 		detail = response.Status
 	}
-	return fmt.Errorf("dropserve returned HTTP %d: %s", response.StatusCode, detail)
+	return fmt.Errorf("beacon returned HTTP %d: %s", response.StatusCode, detail)
 }
 
 func openCommand(arguments []string, _ io.Writer, stderr io.Writer) int {
 	if len(arguments) != 0 {
-		_, _ = fmt.Fprintln(stderr, "Use: dropserve open")
+		_, _ = fmt.Fprintln(stderr, "Use: beacon open")
 		return 2
 	}
 	api, err := newLocalAPI("")
 	if err != nil {
-		_, _ = fmt.Fprintf(stderr, "Dropserve could not open the dashboard: %v\n", err)
+		_, _ = fmt.Fprintf(stderr, "Beacon could not open the dashboard: %v\n", err)
 		return 1
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 	if err := api.health(ctx); err != nil {
-		_, _ = fmt.Fprintf(stderr, "Dropserve could not open the dashboard: %v\n", err)
+		_, _ = fmt.Fprintf(stderr, "Beacon could not open the dashboard: %v\n", err)
 		return 1
 	}
 	if err := launch.OpenURL(api.baseURL + "/"); err != nil {
-		_, _ = fmt.Fprintf(stderr, "Dropserve could not open the dashboard: %v\n", err)
+		_, _ = fmt.Fprintf(stderr, "Beacon could not open the dashboard: %v\n", err)
 		return 1
 	}
 	return 0
@@ -178,17 +178,17 @@ type cliApp struct {
 
 func appsCommand(arguments []string, stdout, stderr io.Writer) int {
 	if len(arguments) != 0 {
-		_, _ = fmt.Fprintln(stderr, "Use: dropserve apps")
+		_, _ = fmt.Fprintln(stderr, "Use: beacon apps")
 		return 2
 	}
 	api, err := newLocalAPI("")
 	if err != nil {
-		_, _ = fmt.Fprintf(stderr, "Dropserve could not list apps: %v\n", err)
+		_, _ = fmt.Fprintf(stderr, "Beacon could not list apps: %v\n", err)
 		return 1
 	}
 	var applications []cliApp
-	if err := api.get(context.Background(), "/_dropserve/api/apps", &applications); err != nil {
-		_, _ = fmt.Fprintf(stderr, "Dropserve could not list apps: %v\n", err)
+	if err := api.get(context.Background(), "/_beacon/api/apps", &applications); err != nil {
+		_, _ = fmt.Fprintf(stderr, "Beacon could not list apps: %v\n", err)
 		return 1
 	}
 	writer := tabwriter.NewWriter(stdout, 0, 4, 2, ' ', 0)
@@ -215,27 +215,27 @@ func logsCommand(arguments []string, stdout, stderr io.Writer) int {
 			follow = true
 		default:
 			if slug != "" {
-				_, _ = fmt.Fprintln(stderr, "Use: dropserve logs <slug> [-f]")
+				_, _ = fmt.Fprintln(stderr, "Use: beacon logs <slug> [-f]")
 				return 2
 			}
 			slug = argument
 		}
 	}
 	if slug == "" {
-		_, _ = fmt.Fprintln(stderr, "Use: dropserve logs <slug> [-f]")
+		_, _ = fmt.Fprintln(stderr, "Use: beacon logs <slug> [-f]")
 		return 2
 	}
 	api, err := newLocalAPI("")
 	if err != nil {
-		_, _ = fmt.Fprintf(stderr, "Dropserve could not read %s logs: %v\n", slug, err)
+		_, _ = fmt.Fprintf(stderr, "Beacon could not read %s logs: %v\n", slug, err)
 		return 1
 	}
 	ctx := context.Background()
 	previous := ""
 	for {
 		var snapshot supervisor.Snapshot
-		if err := api.get(ctx, "/_dropserve/api/logs/"+url.PathEscape(slug), &snapshot); err != nil {
-			_, _ = fmt.Fprintf(stderr, "Dropserve could not read %s logs: %v\n", slug, err)
+		if err := api.get(ctx, "/_beacon/api/logs/"+url.PathEscape(slug), &snapshot); err != nil {
+			_, _ = fmt.Fprintf(stderr, "Beacon could not read %s logs: %v\n", slug, err)
 			return 1
 		}
 		addition := snapshot.Logs
@@ -255,15 +255,15 @@ func logsCommand(arguments []string, stdout, stderr io.Writer) int {
 
 func restartCommand(arguments []string, stdout, stderr io.Writer) int {
 	if len(arguments) != 1 {
-		_, _ = fmt.Fprintln(stderr, "Use: dropserve restart <slug>")
+		_, _ = fmt.Fprintln(stderr, "Use: beacon restart <slug>")
 		return 2
 	}
 	api, err := newLocalAPI("")
 	if err == nil {
-		err = api.post(context.Background(), "/_dropserve/api/apps/"+url.PathEscape(arguments[0])+"/restart", struct{}{})
+		err = api.post(context.Background(), "/_beacon/api/apps/"+url.PathEscape(arguments[0])+"/restart", struct{}{})
 	}
 	if err != nil {
-		_, _ = fmt.Fprintf(stderr, "Dropserve could not restart %s: %v\n", arguments[0], err)
+		_, _ = fmt.Fprintf(stderr, "Beacon could not restart %s: %v\n", arguments[0], err)
 		return 1
 	}
 	_, _ = fmt.Fprintf(stdout, "Restarted %s.\n", arguments[0])
@@ -272,14 +272,14 @@ func restartCommand(arguments []string, stdout, stderr io.Writer) int {
 
 func tailscaleCommand(arguments []string, stdout, stderr io.Writer) int {
 	if len(arguments) == 0 || len(arguments) > 2 {
-		_, _ = fmt.Fprintln(stderr, "Use: dropserve tailscale status|serve|unserve|funnel <slug>|unfunnel <slug>")
+		_, _ = fmt.Fprintln(stderr, "Use: beacon tailscale status|serve|unserve|funnel <slug>|unfunnel <slug>")
 		return 2
 	}
 	action := arguments[0]
 	if len(arguments) == 1 && action == "status" {
 		status, err := discovery.ProbeTailscale(context.Background(), discovery.TailscaleProbes{})
 		if err != nil {
-			_, _ = fmt.Fprintf(stderr, "Dropserve could not read Tailscale status: %v\n", err)
+			_, _ = fmt.Fprintf(stderr, "Beacon could not read Tailscale status: %v\n", err)
 			return 1
 		}
 		output := struct {
@@ -294,7 +294,7 @@ func tailscaleCommand(arguments []string, stdout, stderr io.Writer) int {
 	}
 	api, err := newLocalAPI("")
 	if err != nil {
-		_, _ = fmt.Fprintf(stderr, "Dropserve could not change Tailscale sharing: %v\n", err)
+		_, _ = fmt.Fprintf(stderr, "Beacon could not change Tailscale sharing: %v\n", err)
 		return 1
 	}
 	var path string
@@ -302,27 +302,27 @@ func tailscaleCommand(arguments []string, stdout, stderr io.Writer) int {
 	switch action {
 	case "serve", "unserve":
 		if len(arguments) != 1 {
-			_, _ = fmt.Fprintln(stderr, "Use: dropserve tailscale serve|unserve")
+			_, _ = fmt.Fprintln(stderr, "Use: beacon tailscale serve|unserve")
 			return 2
 		}
-		path = "/_dropserve/api/sharing/tailscale"
+		path = "/_beacon/api/sharing/tailscale"
 		payload = map[string]bool{"enabled": action == "serve"}
 	case "funnel", "unfunnel":
 		if len(arguments) != 2 || arguments[1] == "" {
-			_, _ = fmt.Fprintln(stderr, "Use: dropserve tailscale funnel|unfunnel <slug>")
+			_, _ = fmt.Fprintln(stderr, "Use: beacon tailscale funnel|unfunnel <slug>")
 			return 2
 		}
-		path = "/_dropserve/api/sharing/funnel/" + url.PathEscape(arguments[1])
+		path = "/_beacon/api/sharing/funnel/" + url.PathEscape(arguments[1])
 		payload = map[string]any{"enabled": action == "funnel"}
 		if action == "funnel" {
 			payload.(map[string]any)["confirmation"] = arguments[1]
 		}
 	default:
-		_, _ = fmt.Fprintln(stderr, "Use: dropserve tailscale status|serve|unserve|funnel <slug>|unfunnel <slug>")
+		_, _ = fmt.Fprintln(stderr, "Use: beacon tailscale status|serve|unserve|funnel <slug>|unfunnel <slug>")
 		return 2
 	}
 	if err := api.post(context.Background(), path, payload); err != nil {
-		_, _ = fmt.Fprintf(stderr, "Dropserve could not change Tailscale sharing: %v\n", err)
+		_, _ = fmt.Fprintf(stderr, "Beacon could not change Tailscale sharing: %v\n", err)
 		return 1
 	}
 	_, _ = fmt.Fprintln(stdout, "Tailscale sharing updated.")
@@ -331,7 +331,7 @@ func tailscaleCommand(arguments []string, stdout, stderr io.Writer) int {
 
 func runtimeCommand(arguments []string, stdout, stderr io.Writer) int {
 	if len(arguments) != 2 || arguments[0] != "install" || !validRuntimeName(arguments[1]) {
-		_, _ = fmt.Fprintln(stderr, "Use: dropserve runtime install php|mariadb|postgres")
+		_, _ = fmt.Fprintln(stderr, "Use: beacon runtime install php|mariadb|postgres")
 		return 2
 	}
 	api, err := newLocalAPI("")
@@ -339,13 +339,13 @@ func runtimeCommand(arguments []string, stdout, stderr io.Writer) int {
 		api.client.Timeout = 0
 		installContext, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 		defer cancel()
-		err = api.post(installContext, "/_dropserve/api/addons/"+arguments[1], map[string]string{"action": "install"})
+		err = api.post(installContext, "/_beacon/api/addons/"+arguments[1], map[string]string{"action": "install"})
 		if err == nil {
 			err = waitForRuntimeInstall(installContext, api, arguments[1])
 		}
 	}
 	if err != nil {
-		_, _ = fmt.Fprintf(stderr, "Dropserve could not install %s: %v\n", arguments[1], err)
+		_, _ = fmt.Fprintf(stderr, "Beacon could not install %s: %v\n", arguments[1], err)
 		return 1
 	}
 	_, _ = fmt.Fprintf(stdout, "Installed %s.\n", arguments[1])
@@ -365,7 +365,7 @@ func waitForRuntimeInstall(ctx context.Context, api *localAPI, name string) erro
 	defer ticker.Stop()
 	for {
 		var statuses []cliAddonStatus
-		if err := api.get(ctx, "/_dropserve/api/addons", &statuses); err != nil {
+		if err := api.get(ctx, "/_beacon/api/addons", &statuses); err != nil {
 			return err
 		}
 		found := false
@@ -402,7 +402,7 @@ func validRuntimeName(name string) bool {
 
 func configCommand(arguments []string, stdout, stderr io.Writer, injectedPath string) int {
 	if len(arguments) != 1 {
-		_, _ = fmt.Fprintln(stderr, "Use: dropserve config path|validate|edit")
+		_, _ = fmt.Fprintln(stderr, "Use: beacon config path|validate|edit")
 		return 2
 	}
 	configPath := injectedPath
@@ -410,7 +410,7 @@ func configCommand(arguments []string, stdout, stderr io.Writer, injectedPath st
 		var err error
 		configPath, err = config.DefaultPath()
 		if err != nil {
-			_, _ = fmt.Fprintf(stderr, "Dropserve could not find its configuration: %v\n", err)
+			_, _ = fmt.Fprintf(stderr, "Beacon could not find its configuration: %v\n", err)
 			return 1
 		}
 	}
@@ -420,7 +420,7 @@ func configCommand(arguments []string, stdout, stderr io.Writer, injectedPath st
 		return 0
 	case "validate":
 		if _, err := config.Load(configPath); err != nil {
-			_, _ = fmt.Fprintf(stderr, "Dropserve configuration is invalid: %v\n", err)
+			_, _ = fmt.Fprintf(stderr, "Beacon configuration is invalid: %v\n", err)
 			return 1
 		}
 		_, _ = fmt.Fprintf(stdout, "Configuration is valid: %s\n", configPath)
@@ -428,27 +428,27 @@ func configCommand(arguments []string, stdout, stderr io.Writer, injectedPath st
 	case "edit":
 		if _, err := os.Stat(configPath); errors.Is(err, os.ErrNotExist) {
 			if err := config.Save(configPath, config.Default()); err != nil {
-				_, _ = fmt.Fprintf(stderr, "Dropserve could not create its configuration: %v\n", err)
+				_, _ = fmt.Fprintf(stderr, "Beacon could not create its configuration: %v\n", err)
 				return 1
 			}
 		} else if err != nil {
-			_, _ = fmt.Fprintf(stderr, "Dropserve could not read its configuration: %v\n", err)
+			_, _ = fmt.Fprintf(stderr, "Beacon could not read its configuration: %v\n", err)
 			return 1
 		}
 		if err := launch.OpenPath(configPath); err != nil {
-			_, _ = fmt.Fprintf(stderr, "Dropserve could not open its configuration: %v\n", err)
+			_, _ = fmt.Fprintf(stderr, "Beacon could not open its configuration: %v\n", err)
 			return 1
 		}
 		return 0
 	default:
-		_, _ = fmt.Fprintln(stderr, "Use: dropserve config path|validate|edit")
+		_, _ = fmt.Fprintln(stderr, "Use: beacon config path|validate|edit")
 		return 2
 	}
 }
 
 func firewallCommand(arguments []string, stdout, stderr io.Writer) int {
 	if len(arguments) != 1 || arguments[0] != "allow" {
-		_, _ = fmt.Fprintln(stderr, "Use: dropserve firewall allow")
+		_, _ = fmt.Fprintln(stderr, "Use: beacon firewall allow")
 		return 2
 	}
 	if runtime.GOOS != "windows" {
@@ -457,16 +457,16 @@ func firewallCommand(arguments []string, stdout, stderr io.Writer) int {
 	}
 	executable, err := os.Executable()
 	if err != nil {
-		_, _ = fmt.Fprintf(stderr, "Dropserve could not locate its executable: %v\n", err)
+		_, _ = fmt.Fprintf(stderr, "Beacon could not locate its executable: %v\n", err)
 		return 1
 	}
-	desktop := filepath.Join(filepath.Dir(executable), "dropserve.exe")
+	desktop := filepath.Join(filepath.Dir(executable), "beacon.exe")
 	if _, err := os.Stat(desktop); err != nil {
 		desktop = executable
 	}
 	commands := [][]string{
-		{"advfirewall", "firewall", "delete", "rule", "name=Dropserve"},
-		{"advfirewall", "firewall", "add", "rule", "name=Dropserve", "dir=in", "action=allow", "program=" + desktop, "enable=yes", "profile=private"},
+		{"advfirewall", "firewall", "delete", "rule", "name=Beacon"},
+		{"advfirewall", "firewall", "add", "rule", "name=Beacon", "dir=in", "action=allow", "program=" + desktop, "enable=yes", "profile=private"},
 	}
 	for _, arguments := range commands {
 		commandContext, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -474,10 +474,10 @@ func firewallCommand(arguments []string, stdout, stderr io.Writer) int {
 		output, commandErr := exec.CommandContext(commandContext, "netsh.exe", arguments...).CombinedOutput()
 		cancel()
 		if commandErr != nil {
-			_, _ = fmt.Fprintf(stderr, "Dropserve could not update the Windows firewall rule. Run this command from an Administrator terminal: %v: %s\n", commandErr, strings.TrimSpace(string(output)))
+			_, _ = fmt.Fprintf(stderr, "Beacon could not update the Windows firewall rule. Run this command from an Administrator terminal: %v: %s\n", commandErr, strings.TrimSpace(string(output)))
 			return 1
 		}
 	}
-	_, _ = fmt.Fprintln(stdout, "Windows now allows Dropserve on private networks.")
+	_, _ = fmt.Fprintln(stdout, "Windows now allows Beacon on private networks.")
 	return 0
 }

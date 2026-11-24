@@ -9,7 +9,7 @@ import (
 func makeSystemdUnit(executable string) []byte {
 	executable = strings.ReplaceAll(executable, "%", "%%")
 	return []byte(fmt.Sprintf(`[Unit]
-Description=Dropserve local app server
+Description=Beacon local app server
 Wants=network-online.target
 After=network-online.target
 

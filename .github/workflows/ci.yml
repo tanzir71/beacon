@@ -38,31 +38,31 @@ jobs:
         run: make check
       - name: Build and run the M2 smoke (Unix)
         if: runner.os != 'Windows'
-        run: make build && ./scripts/smoke/m2.sh ./bin/dropserve
+        run: make build && ./scripts/smoke/m2.sh ./bin/beacon
       - name: Build and run the M2 smoke (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
           make build
-          ./scripts/smoke/m2.ps1 -Binary ./bin/dropserve-cli.exe
+          ./scripts/smoke/m2.ps1 -Binary ./bin/beacon-cli.exe
       - name: Run the M5 smoke (Unix)
         if: runner.os != 'Windows'
-        run: ./scripts/smoke/m5.sh ./bin/dropserve
+        run: ./scripts/smoke/m5.sh ./bin/beacon
       - name: Run the M5 smoke (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
-        run: ./scripts/smoke/m5.ps1 -Binary ./bin/dropserve-cli.exe
+        run: ./scripts/smoke/m5.ps1 -Binary ./bin/beacon-cli.exe
       - name: Run the M6 Windows autostart smoke
         if: runner.os == 'Windows'
         shell: pwsh
-        run: ./scripts/smoke/m6.ps1 -Binary ./bin/dropserve-cli.exe -BackgroundBinary ./bin/dropserve.exe
+        run: ./scripts/smoke/m6.ps1 -Binary ./bin/beacon-cli.exe -BackgroundBinary ./bin/beacon.exe
       - name: Run the M6 Windows background smoke
         if: runner.os == 'Windows'
         shell: pwsh
-        run: ./scripts/smoke/m6-background.ps1 -Binary ./bin/dropserve.exe
+        run: ./scripts/smoke/m6-background.ps1 -Binary ./bin/beacon.exe
       - name: Run the M6 Linux autostart smoke
         if: runner.os != 'Windows'
-        run: ./scripts/smoke/m6.sh ./bin/dropserve
+        run: ./scripts/smoke/m6.sh ./bin/beacon
 
   golangci:
     name: golangci-lint
@@ -135,12 +135,12 @@ jobs:
       - name: Install Inno Setup
         shell: pwsh
         run: choco install innosetup --no-progress -y
-      - name: Build Dropserve binaries
+      - name: Build Beacon binaries
         shell: pwsh
         run: go run ./scripts/gate.go build
       - name: Self-sign and verify installed binaries
         shell: pwsh
-        run: ./scripts/release/m10-signing.ps1 -Files ./bin/dropserve.exe,./bin/dropserve-cli.exe -TrustedVerification
+        run: ./scripts/release/m10-signing.ps1 -Files ./bin/beacon.exe,./bin/beacon-cli.exe -TrustedVerification
       - name: Compile installer
         shell: pwsh
         run: |
@@ -149,14 +149,14 @@ jobs:
           $sourceDir = (Resolve-Path bin).Path
           $outputDir = Join-Path (Resolve-Path .).Path 'dist\installer'
           New-Item -ItemType Directory -Force -Path $outputDir | Out-Null
-          & $iscc.FullName "/DSourceDir=$sourceDir" "/DOutputDir=$outputDir" '/DAppVersion=0.0.0-ci' '/DNumericVersion=0.0.0.0' /Q packaging/windows/dropserve.iss
+          & $iscc.FullName "/DSourceDir=$sourceDir" "/DOutputDir=$outputDir" '/DAppVersion=0.0.0-ci' '/DNumericVersion=0.0.0.0' /Q packaging/windows/beacon.iss
           if ($LASTEXITCODE -ne 0) { throw "ISCC exited $LASTEXITCODE" }
       - name: Silent install and uninstall smoke
         shell: pwsh
-        run: ./scripts/release/m10-installer.ps1 -Installer ./dist/installer/dropserve-0.0.0-ci-windows-amd64-setup.exe
+        run: ./scripts/release/m10-installer.ps1 -Installer ./dist/installer/beacon-0.0.0-ci-windows-amd64-setup.exe
       - name: Fresh Windows VM and separate WSL2 network smoke
         shell: pwsh
-        run: ./scripts/release/m10-fresh-machine.ps1 -Installer ./dist/installer/dropserve-0.0.0-ci-windows-amd64-setup.exe
+        run: ./scripts/release/m10-fresh-machine.ps1 -Installer ./dist/installer/beacon-0.0.0-ci-windows-amd64-setup.exe
 
   landing-page:
     name: Landing page

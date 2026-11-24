@@ -12,15 +12,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/tanzir71/dropserve/internal/config"
+	"github.com/tanzir71/beacon/internal/config"
 )
 
 func TestUsageExposesTheHandoverCLIShape(t *testing.T) {
 	for _, command := range []string{
-		"dropserve serve", "dropserve status", "dropserve open", "dropserve apps",
-		"dropserve add", "dropserve logs", "dropserve restart", "dropserve autostart",
-		"dropserve trust", "dropserve firewall", "dropserve tailscale", "dropserve runtime",
-		"dropserve config", "dropserve doctor", "dropserve version",
+		"beacon serve", "beacon status", "beacon open", "beacon apps",
+		"beacon add", "beacon logs", "beacon restart", "beacon autostart",
+		"beacon trust", "beacon firewall", "beacon tailscale", "beacon runtime",
+		"beacon config", "beacon doctor", "beacon version",
 	} {
 		if !strings.Contains(usage, command) {
 			t.Errorf("help omits %q", command)
@@ -33,12 +33,12 @@ func TestLocalAPIUsesLiveCSRFBoundaryForHeadlessActions(t *testing.T) {
 	var mutations []string
 	server := httptest.NewServer(http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
 		switch request.URL.Path {
-		case "/_dropserve/api/status":
+		case "/_beacon/api/status":
 			_ = json.NewEncoder(response).Encode(map[string]string{"csrf_token": token})
-		case "/_dropserve/api/apps":
+		case "/_beacon/api/apps":
 			_ = json.NewEncoder(response).Encode([]cliApp{{Slug: "notes", Name: "Notes", Type: "static", Status: "ready"}})
 		default:
-			if request.Method != http.MethodPost || request.Header.Get("X-Dropserve-CSRF") != token {
+			if request.Method != http.MethodPost || request.Header.Get("X-Beacon-CSRF") != token {
 				http.Error(response, "missing token", http.StatusForbidden)
 				return
 			}
@@ -53,17 +53,17 @@ func TestLocalAPIUsesLiveCSRFBoundaryForHeadlessActions(t *testing.T) {
 	defer server.Close()
 	api := &localAPI{baseURL: server.URL, client: server.Client()}
 	var applications []cliApp
-	if err := api.get(context.Background(), "/_dropserve/api/apps", &applications); err != nil {
+	if err := api.get(context.Background(), "/_beacon/api/apps", &applications); err != nil {
 		t.Fatalf("get live apps: %v", err)
 	}
 	if len(applications) != 1 || applications[0].Slug != "notes" {
 		t.Fatalf("live apps = %#v", applications)
 	}
 	for _, path := range []string{
-		"/_dropserve/api/apps/notes/restart",
-		"/_dropserve/api/sharing/tailscale",
-		"/_dropserve/api/sharing/funnel/notes",
-		"/_dropserve/api/addons/php",
+		"/_beacon/api/apps/notes/restart",
+		"/_beacon/api/sharing/tailscale",
+		"/_beacon/api/sharing/funnel/notes",
+		"/_beacon/api/addons/php",
 	} {
 		if err := api.post(context.Background(), path, map[string]any{"enabled": true}); err != nil {
 			t.Fatalf("post %s: %v", path, err)
@@ -78,7 +78,7 @@ func TestWaitForRuntimeInstallPollsUntilTheQueuedChangeFinishes(t *testing.T) {
 	t.Parallel()
 	calls := 0
 	server := httptest.NewServer(http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
-		if request.URL.Path != "/_dropserve/api/addons" {
+		if request.URL.Path != "/_beacon/api/addons" {
 			http.NotFound(response, request)
 			return
 		}

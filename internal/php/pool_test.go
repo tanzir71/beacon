@@ -20,7 +20,7 @@ func TestPoolRestartsKilledWorkerWithinFiveSeconds(t *testing.T) {
 		Workers: 2,
 		Command: func(commandContext context.Context, address string) *exec.Cmd {
 			command := exec.CommandContext(commandContext, os.Args[0], "-test.run=TestPHPPoolWorkerProcess", "--", "-b", address) // #nosec G204,G702 -- the test executable and loopback address are controlled here.
-			command.Env = append(os.Environ(), "DROPSERVE_TEST_PHP_POOL_WORKER=1")
+			command.Env = append(os.Environ(), "BEACON_TEST_PHP_POOL_WORKER=1")
 			return command
 		},
 		StartTimeout: time.Second,
@@ -59,7 +59,7 @@ func TestPoolRestartsKilledWorkerWithinFiveSeconds(t *testing.T) {
 		t.Fatalf("PHP worker %d was not replaced within five seconds", originalPID)
 	}
 	handler := pool.Handler(t.TempDir(), "php")
-	request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://dropserve.test/php/", nil)
+	request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://beacon.test/php/", nil)
 	request.URL.Path = "/"
 	request.RequestURI = "/php/"
 	response := httptest.NewRecorder()
@@ -80,7 +80,7 @@ func acceptsConnections(address string) bool {
 }
 
 func TestPHPPoolWorkerProcess(t *testing.T) {
-	if os.Getenv("DROPSERVE_TEST_PHP_POOL_WORKER") != "1" {
+	if os.Getenv("BEACON_TEST_PHP_POOL_WORKER") != "1" {
 		return
 	}
 	separator := -1

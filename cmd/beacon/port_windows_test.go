@@ -15,7 +15,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/tanzir71/dropserve/internal/state"
+	"github.com/tanzir71/beacon/internal/state"
 )
 
 func TestPortFallbackAndStatus(t *testing.T) {
@@ -144,7 +144,7 @@ func occupyPort(t *testing.T, port int) net.Listener {
 	)
 	if err != nil {
 		// Windows CI images can reserve port 80 through http.sys or an excluded
-		// range. The failed real bind proves Dropserve will have to skip it just
+		// range. The failed real bind proves Beacon will have to skip it just
 		// as surely as a listener owned by this test would.
 		t.Logf("port %d was already unavailable: %v", port, err)
 		return nil

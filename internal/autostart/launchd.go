@@ -6,7 +6,7 @@ import (
 	"fmt"
 )
 
-const launchAgentLabel = "dev.dropserve.agent"
+const launchAgentLabel = "dev.beacon.agent"
 
 func makeLaunchAgent(executable string) []byte {
 	var escaped bytes.Buffer

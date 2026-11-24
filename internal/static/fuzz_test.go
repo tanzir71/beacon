@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	staticserver "github.com/tanzir71/dropserve/internal/static"
+	staticserver "github.com/tanzir71/beacon/internal/static"
 )
 
 func FuzzPathResolver(f *testing.F) {

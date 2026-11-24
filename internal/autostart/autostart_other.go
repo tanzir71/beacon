@@ -1,6 +1,6 @@
 //go:build !windows && !linux && !darwin
 
-// Package autostart manages Dropserve's per-user operating-system startup entry.
+// Package autostart manages Beacon's per-user operating-system startup entry.
 package autostart
 
 import (
@@ -12,17 +12,17 @@ func unsupportedError() error {
 	return errors.New("autostart is not implemented on " + runtime.GOOS)
 }
 
-// Enable creates or replaces the current user's Dropserve startup entry.
+// Enable creates or replaces the current user's Beacon startup entry.
 func Enable(_ string) error {
 	return unsupportedError()
 }
 
-// Disable removes the current user's Dropserve startup entry.
+// Disable removes the current user's Beacon startup entry.
 func Disable() error {
 	return nil
 }
 
-// Enabled reports the actual presence of Dropserve's startup entry.
+// Enabled reports the actual presence of Beacon's startup entry.
 func Enabled() (bool, error) {
 	return false, nil
 }

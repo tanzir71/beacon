@@ -7,7 +7,7 @@ Set-StrictMode -Version Latest
 
 $repositoryRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 if ($Binary -eq "") {
-    $Binary = Join-Path $repositoryRoot "bin\dropserve.exe"
+    $Binary = Join-Path $repositoryRoot "bin\beacon.exe"
 }
 $binaryPath = (Resolve-Path -LiteralPath $Binary).Path
 
@@ -26,7 +26,7 @@ if ($subsystem -ne 2) {
 }
 
 $temporaryRoot = [System.IO.Path]::GetFullPath([System.IO.Path]::GetTempPath())
-$workDirectory = Join-Path $temporaryRoot ("dropserve-background-smoke-" + [Guid]::NewGuid().ToString("N"))
+$workDirectory = Join-Path $temporaryRoot ("beacon-background-smoke-" + [Guid]::NewGuid().ToString("N"))
 $appsRoot = Join-Path $workDirectory "apps"
 $probePath = Join-Path $workDirectory "console-window.txt"
 $null = New-Item -ItemType Directory -Path $appsRoot
@@ -37,7 +37,7 @@ try {
     $start.FileName = $binaryPath
     $start.UseShellExecute = $false
     $start.CreateNoWindow = $false
-    $start.Environment["DROPSERVE_BACKGROUND_CONSOLE_PROBE"] = $probePath
+    $start.Environment["BEACON_BACKGROUND_CONSOLE_PROBE"] = $probePath
     foreach ($argument in @("--background", "--listen", "127.0.0.1:0", "--root", $appsRoot)) {
         $start.ArgumentList.Add($argument)
     }

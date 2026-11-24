@@ -1,5 +1,5 @@
 {
-  "name": "dropserve-broken-fixture",
+  "name": "beacon-broken-fixture",
   "private": true,
   "scripts": {
     "start": "node fail.js"

@@ -15,17 +15,17 @@ import (
 	"testing"
 	"time"
 
-	"github.com/tanzir71/dropserve/internal/app"
-	"github.com/tanzir71/dropserve/internal/router"
-	"github.com/tanzir71/dropserve/internal/scanner"
-	staticserver "github.com/tanzir71/dropserve/internal/static"
+	"github.com/tanzir71/beacon/internal/app"
+	"github.com/tanzir71/beacon/internal/router"
+	"github.com/tanzir71/beacon/internal/scanner"
+	staticserver "github.com/tanzir71/beacon/internal/static"
 )
 
 func TestStaticFixtureMounted(t *testing.T) {
 	t.Parallel()
 
 	handler := fixtureRouter(t)
-	request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://dropserve.test/static/", nil)
+	request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://beacon.test/static/", nil)
 	response := httptest.NewRecorder()
 	handler.ServeHTTP(response, request)
 
@@ -55,7 +55,7 @@ func TestMissingTrailingSlashRedirects(t *testing.T) {
 	request := httptest.NewRequestWithContext(
 		context.Background(),
 		http.MethodGet,
-		"http://dropserve.test/static?from=dashboard",
+		"http://beacon.test/static?from=dashboard",
 		nil,
 	)
 	response := httptest.NewRecorder()
@@ -93,7 +93,7 @@ func TestManifestVisibilityIsEnforcedBeforeAppHandler(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			called = false
 			handler := router.New([]router.Mount{{App: app.App{Slug: "notes", Visibility: test.visibility}, Handler: appHandler}})
-			request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://dropserve.test/notes/", nil)
+			request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://beacon.test/notes/", nil)
 			request.RemoteAddr = test.remote
 			response := httptest.NewRecorder()
 			handler.ServeHTTP(response, request)
@@ -240,7 +240,7 @@ func writeStaticApp(t *testing.T, root, name, body string) {
 func assertBodyContains(t *testing.T, handler http.Handler, requestPath, want string) {
 	t.Helper()
 
-	request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://dropserve.test"+requestPath, nil)
+	request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://beacon.test"+requestPath, nil)
 	response := httptest.NewRecorder()
 	handler.ServeHTTP(response, request)
 	result := response.Result()

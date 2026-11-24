@@ -34,7 +34,7 @@ type Store struct {
 // Open loads an existing file or returns an empty store when it is absent.
 func Open(path string) (*Store, error) {
 	store := &Store{path: path, apps: make(map[string]App), now: time.Now}
-	content, err := os.ReadFile(path) // #nosec G304 -- path is the fixed Dropserve state location.
+	content, err := os.ReadFile(path) // #nosec G304 -- path is the fixed Beacon state location.
 	if errors.Is(err, os.ErrNotExist) {
 		return store, nil
 	}

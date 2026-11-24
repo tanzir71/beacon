@@ -2,7 +2,7 @@
 set -eu
 
 repository_root=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
-binary=${1:-"$repository_root/bin/dropserve"}
+binary=${1:-"$repository_root/bin/beacon"}
 fixtures_root="$repository_root/testdata/fixtures"
 work_dir=$(mktemp -d)
 output_file="$work_dir/stdout.log"
@@ -25,17 +25,17 @@ address=
 attempt=0
 while [ "$attempt" -lt 100 ]; do
     if ! kill -0 "$server_pid" 2>/dev/null; then
-        echo "Dropserve exited before becoming ready:" >&2
+        echo "Beacon exited before becoming ready:" >&2
         sed -n '1,40p' "$error_file" >&2
         exit 1
     fi
-    address=$(sed -n 's/^Dropserve is ready at \(http:\/\/[^[:space:]]*\)$/\1/p' "$output_file" | head -n 1)
+    address=$(sed -n 's/^Beacon is ready at \(http:\/\/[^[:space:]]*\)$/\1/p' "$output_file" | head -n 1)
     [ -n "$address" ] && break
     attempt=$((attempt + 1))
     sleep 0.1
 done
 [ -n "$address" ] || {
-    echo "Dropserve did not print a ready address within 10 seconds" >&2
+    echo "Beacon did not print a ready address within 10 seconds" >&2
     exit 1
 }
 
