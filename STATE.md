@@ -1,15 +1,16 @@
 # Build State
 
-**Current milestone:** B0 - New repository, the gate, and the landing page
-**Last updated:** 2026-11-24T22:58:51Z
-**Gate status:** green
-**Iterations completed:** 2
+**Current milestone:** U1 - The app's own skeleton
+**Last updated:** 2026-11-24T23:30Z
+**Gate status:** green (local full lint/race/cross-build gate)
+**Iterations completed:** 3
 
 ## Milestone Progress
 
+- [ ] U1 - The app's own skeleton
 - [ ] B0 - New repository, the gate, and the landing page
 - [ ] B1 - Identity and people on this network
-- [ ] B2 - Messages on the LAN
+- [ ] B2 - Messages on the LAN and over the internet
 - [ ] B3 - Phones join by QR
 - [ ] B4 - Invites and the address book
 - [ ] B5 - Lighthouses, links beyond the LAN, reach
@@ -20,103 +21,161 @@
 
 ## Current Milestone Criteria
 
-- [x] Renamed project passes the complete inherited `make check` gate.
+- [ ] `cmd/beacon` starts one `internal/app` supervisor with four equal services: sites, links, events, ui.
+- [ ] First run asks for a display name and creates the identity key; adding a site is optional.
+- [ ] One configuration has sites, people, messages, network and safety sections; one state directory and HTTP port.
+- [ ] One left-rail shell: Reachable now Home with On this computer; hosting controls under Sites; no launchpad.
+- [ ] The CLI is organised by sites, people, messages, network, bundle and global commands.
+- [ ] One behavior-preserving commit moves reused code into the layout in section 7.3; gate green before and after.
+- [ ] No shipped/user-visible string, generated output, environment variable or written file carries the earlier product name; history exempt.
+- [ ] `beacon.json` and legacy-only site manifests are honoured, and neither is written.
+- [ ] `TestServiceFailureIsContained` proves independent panic containment for each of the four services.
+- [ ] I1-I5 tests pass with unchanged meaning through the new skeleton.
+- [ ] Earlier documents are in docs/history, ADR-015 is rewritten, and both revision sections are recorded.
+
+## B0 Criteria
+
+- [x] `make check` exits 0 on a clean checkout.
 - [ ] Beacon install/uninstall preserves an existing Dropserve installation.
 - [ ] Landing translations have identical keys; generated pages are current.
 - [ ] HTML validation, 150 KB budget, and outside-resource checks pass.
 - [ ] Browser language precedence and privacy tests pass.
 - [ ] Both languages and themes pass axe AA and the 320 px layout check.
 - [ ] Empty release metadata produces no dead download links.
-- [ ] ADR-015 and ADR-016 are written with verified evidence.
+- [ ] ADR-015, ADR-016 (S6) and ADR-017 (delivery paths) are written with verified evidence.
 - [ ] Published Pages URL returns HTTP 200.
 - [ ] Demo transcript, commit, milestone tag, push, and binary pre-release exist.
 
-## Repository Bootstrap
+## Starting Point
 
-- Source: local clean clone of `tanzir71/dropserve` at `1c1e433`.
+- The repository contains reused hosting code from `tanzir71/dropserve` at
+  `1c1e433`, being fitted under Blackout Beacon's own application skeleton.
+  That earlier project is prior work, not the base or specification of this app.
 - Work directory: `D:\claude-upgrade-26\local-lan\beacon`.
-- Created public repository: https://github.com/tanzir71/beacon.
+- Repository: https://github.com/tanzir71/beacon.
 - Cloned with `--no-tags`; source remote removed before adding Beacon origin.
-- Neither the Dropserve checkout nor the Python prototype has been modified.
-- Original Dropserve ledger remains available in Git at `1c1e433:STATE.md`.
-- Original handover and ADRs 001 through 014 remain historical references.
+- Neither the earlier hosting checkout nor Python prototype was modified.
+- The prior build ledger is available in Git at `1c1e433:STATE.md`.
+- The prior handover and ADRs 001-014 are historical references only and are
+  to move into `docs/history/` under revision 1.2.
+
+## Handover Revision 1.1 Applied
+
+- Read and adopted on 2026-11-24. U1 now precedes B0; B2 is Messages on the LAN
+  and over the internet. Added requirements are recorded, not claimed complete.
+- There is one app with four equal services, not one product inside another.
+- Internet delivery is optional: automatic offers every allowed available path;
+  internet/beacon modes restrict paths; cautious implies beacon and mailbox-only.
+- B1 adds I8: empty internet lists give zero WAN dials and no host literals
+  outside seed lists. B2 adds S7, signed editable internet lists, max four
+  connections, delivery-path labels, blocked-path tests and I12 deduplication.
+- B5 adds fastest-path site/file selection and GP-8 internet-loss fallback.
+- Refresh landing copy/designs from the authoritative sibling handover directory
+  after U1. B0 adds the delivery rule, six FAQs, internet-delivery status,
+  and ADR-017. No unchanged 1.0 copy is considered authoritative.
+
+## Handover Revision 1.2 Applied
+
+- Re-read revision 1.2 in full on 2026-11-24 after the owner's update. This
+  document alone specifies Blackout Beacon; prior project documents bind nothing.
+- Kept commits `2691ff8` and `0e553cf`, history, independent install identifiers,
+  and the gate. No history rewrite or force push.
+- Renamed Repository Bootstrap to Starting point, made U1 current, inserted
+  all U1 criteria, renamed B2, and kept factual toolchain/test proof.
+- Next documentation pass rewrites README/CONTRIBUTING/SECURITY/API, moves prior
+  documents to history, replaces withdrawn ADR-015 with 015-one-app, puts the
+  storage decision in ADR-018, and adds delivery-path ADR-017.
+- The old landing page/screenshots and hosting-centred setup/launchpad are to
+  be removed, not presented as this app. A behavior-preserving package move is
+  separate from supervisor, configuration, identity, shell and CLI changes.
+- The old-name child environment decision is withdrawn. U1 emits only Beacon
+  names and reads the legacy site manifest only without changing user files.
+- Owner instruction at 2026-11-24T23:23Z: run no GitHub Actions. Use local
+  equivalents; do not dispatch, rerun or push commits that trigger workflows.
+  Local commits continue. External release/publication proofs stay pending.
 
 ## Iteration Evidence
 
-### Baseline Gate Repair
+### 1: Initial Gate Repair
 
 - This shell initially had neither Go nor Make on PATH.
 - Installed portable Go 1.27.4 under the approved temporary directory, verified
-  against official SHA-256 `178ab98950ac69ab25069307dc6ade79f3816e414cce95b4da166a115cde1e7e`.
-- Installed portable LLVM-MinGW 20261117 UCRT x86_64 for race-detector tests,
-  verified against release SHA-256 `4d002e330a0f703625aa5ccbc37e96f8f824413e163bfc7336774aabd2c3a412`.
+  SHA-256 `178ab98950ac69ab25069307dc6ade79f3816e414cce95b4da166a115cde1e7e`.
+- Installed portable LLVM-MinGW 20261117 UCRT x86_64 for race tests, verified
+  SHA-256 `4d002e330a0f703625aa5ccbc37e96f8f824413e163bfc7336774aabd2c3a412`.
 - Existing Make: Android NDK 28.2.13676358 `prebuilt/windows-x86_64/bin`.
-- Build commands prepend these toolchain `bin` directories to the process PATH.
-  Race tests use `CGO_ENABLED=1`; the gate still forces `CGO_ENABLED=0` for all
-  shipped cross-builds and the optional Windows tray build.
-- First full gate failed `TestLANChangeReissuesLeafWithinOneMonitorInterval`:
-  `leaf was not reissued within 250ms (elapsed 260.9589ms, last read error: <nil>)`.
-  Cleanup also failed because cancellation did not join the writing goroutine.
-- Fixed test teardown to cancel and join the monitor before temporary-file
-  cleanup. Kept the 250 ms deadline, all assertions, and the gate unchanged.
-- The original refresh assertion passed 20 focused race-detector repetitions
-  in 0.03-0.05 seconds per case. The initial cold/full-suite deadline failure
-  remains recorded as a cold-start timing risk, not erased by retries.
-- After the teardown fix, `make check` exited 0, including formatting, portable
-  lint, the complete race suite, version injection, all three zero-CGO target
-  builds, the optional tray build, and the shipped-file scan: `gate: green`.
-- A separate `go test -race -count=3 ./...` exited 0 with all packages passing
-  uncached three times, including discovery (1.543s) and server (102.129s).
-- The gate's existing portable lint fallback is `go vet`; golangci-lint is not
-  installed locally. Hosted CI retains the full separate golangci-lint job.
+- Commands prepend these toolchain bin directories to process PATH. Race tests
+  use CGO_ENABLED=1; every shipped cross-build and tray build forces 0.
+- First full gate failed the TLS monitor's 250 ms deadline at 260.9589 ms and
+  cleanup raced the still-writing goroutine. Joined the monitor after cancel,
+  keeping the deadline and assertions. Twenty focused repetitions passed in
+  0.03-0.05s; cold-start contention remains a recorded timing risk.
+- `make check` and separate uncached `go test -race -count=3 ./...` exited 0.
+- Committed as `2691ff8`.
+
+### 2: Product Identifier Isolation
+
+- Two new identity tests failed first on module, config/state/Apps roots, binary
+  outputs, OS registrations and missing Beacon command/installer paths.
+- Isolated the module, binaries, task, firewall, service, LaunchAgent, storage,
+  API, sessions/CSRF, updates and release scripts. New installer AppId:
+  `49BAE7EA-599A-4F46-A24B-7905900A85E9`.
+- Preserved attribution, history, tests and prior documents. Kept legacy app
+  manifest/environment contracts at that time; revision 1.2 now changes output.
+- Focused tests and the full local gate exited 0. No OS task/firewall/trust or
+  Tailscale action was run. This is not the side-by-side installer proof.
+- Committed as `0e553cf`; pushed before the no-Actions instruction.
+- No milestone tag or release was created.
+
+### 3: U1 Gate Repair Before New Features
+
+- Prior hosted run 45506076380 failed full lint and module-only security. It was
+  read before the owner's no-Actions instruction. No workflow has been started,
+  rerun or triggered since that instruction.
+- Installed portable golangci-lint v2.15.0, verified SHA-256
+  `cd7ea6063c95de245e17e5246e42bdc14bb221792c429dbd239ab3a6ade6ca6a`.
+  Add its `golangci-lint-2.15.0-windows-amd64` directory to the temporary PATH.
+- `make check` reproduced three errcheck failures locally. Child exit-status
+  receives now explicitly document intentional discard during liveness/shutdown.
+  Neither process behavior nor lint configuration was weakened.
+- Local govulncheck reproduced eight x/net module advisories. Upgraded x/net
+  v0.56.0 to the minimum all-fixed v0.62.0, requiring x/sys v0.49.0 and Go 1.26.0.
+  Inspected module floors and BSD license; documented the new Go floor.
+- The supported Go floor exposed deprecated ReverseProxy Director use. Moved
+  to Rewrite, SetURL and SetXForwarded while preserving public Host and site
+  prefixes. Proxy, cookie, download and WebSocket regression tests pass.
+- Full `make check` exited 0: full lint `0 issues.`, race suite, version injection,
+  Windows/Linux/macOS zero-CGO builds, tray build and shipped-file scan.
+- Local Linux-target lint: `0 issues.`. Verbose govulncheck v1.7.0:
+  `No vulnerabilities found.` across 20 modules including module-only results.
+- Standalone gosec v2.29.0 could not decode Go 1.27 export data; used current
+  v2.30.0 (Go floor 1.26) instead. `gosec -quiet ./...` exited 0. This is a
+  local tooling workaround, not a source or rule exclusion. Tool-only modules
+  were not added to the app's go.mod.
 
 ## Decisions Made This Build
 
-- Use the specified default repository name, `tanzir71/beacon`.
-- Keep all original product invariants and gate stages; do not inherit milestone
-  completion claims or tags from Dropserve.
-- ADR-015 records Beacon's separate installation identity and SQLite for mesh
-  data only. Existing user-app manifests and base-path environment variables
-  remain unchanged because already-hosted apps can depend on those contracts.
+- Revision 1.2 is authoritative. Earlier product architecture decisions and
+  milestones do not prescribe this app. Keep factual reuse and attribution.
+- The first ADR-015 draft is withdrawn and is to be replaced, not treated as
+  authority. Only legacy manifest reading remains a compatibility requirement.
+- No GitHub Actions. Use local native/cross-target lint, race tests, security
+  tools, browsers, installer tooling or local VMs where available.
 
-### B0 Product Identifier Isolation
+## Open Human Work
 
-- Added `TestBeaconStorageDoesNotUseDropserveDirectories` and
-  `TestBeaconInstallationIdentifiersAreIndependent`, then observed both fail
-  on the inherited config/state/Apps directories, module path, binary outputs,
-  OS registration names, and missing Beacon command/installer paths.
-- Renamed the module, command directory, binaries, installer, autostart task,
-  firewall rule, service, LaunchAgent, state/config/cache roots, mDNS name, local
-  CA identity, API namespace, CSRF/session names, update repository, release
-  scripts, and matching regression fixtures. The installer has a distinct
-  AppId, `49BAE7EA-599A-4F46-A24B-7905900A85E9`.
-- Preserved the original MIT attribution, handover, ADRs 001-014, and all
-  inherited tests. `dropserve.json` and `DROPSERVE_BASE_PATH`/`DROPSERVE_BASE_URL`
-  remain hosted-app interfaces, never fallback installation paths.
-- Focused new identity tests exited 0. Final `make check` exited 0 with all
-  race tests, version injection (`beacon 1.2.3 (abc1234)`), zero-CGO builds for
-  Windows/amd64, Linux/amd64 and macOS/arm64, optional tray, and shipped-file
-  scanning intact. No OS task, firewall, trust, or Tailscale action was run.
-- This is not the Windows side-by-side installation proof; that acceptance
-  criterion remains unchecked and is the next target.
-- No Beacon milestone tag or release has been created.
+- No question blocks current U1 work. Eventual release secrets, relay-list
+  approval, Banglish read-aloud, lighthouse deployment and field proofs stay
+  human-owned under section 13; none is claimed complete.
 
-## Open Questions For The Human
+## Dependencies
 
-- None blocking local implementation. Release-signing secrets, the Banglish
-  read-aloud review, lighthouse deployment, and real hardware proofs remain
-  human-owned acceptance steps under the handover.
-
-## Deviations From The Spec
-
-- None. Beacon milestones are not complete until every required proof exists.
-
-## Dependency Count
-
-- Inherited: 10 direct, 20 indirect modules. No Beacon dependencies added yet.
+- 10 direct modules; no direct dependency added. x/net v0.62.0 and x/sys v0.49.0
+  require Go 1.26.0 (locally running Go 1.27.4).
 
 ## Next Target
 
-Implement and run the B0 Windows side-by-side installer preservation proof,
-then build the bilingual landing pages from the supplied copy and tokens.
-Before any new feature work, read this ledger and run `make check` again.
+Align documents, then make the behavior-preserving package-move commit before
+implementing the app supervisor. No further B0 features until U1 passes. Read
+this ledger and run `make check` at the start of each iteration. Do not push
+or run GitHub Actions.

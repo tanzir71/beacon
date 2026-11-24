@@ -35,7 +35,7 @@ Existing hosted-app `dropserve.json` manifests and `DROPSERVE_BASE_PATH` /
 
 ## Try the current build
 
-The first tagged installer is still being acceptance-tested. Until it is published, build from source with Go 1.25 or newer and GNU Make:
+The first tagged installer is still being acceptance-tested. Until it is published, build from source with Go 1.26 or newer and GNU Make:
 
 ```console
 git clone https://github.com/tanzir71/beacon.git

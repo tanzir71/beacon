@@ -1,6 +1,6 @@
 module github.com/tanzir71/beacon
 
-go 1.25.0
+go 1.26.0
 
 require (
 	github.com/fsnotify/fsnotify v1.10.1
@@ -14,7 +14,7 @@ require (
 	github.com/smallstep/truststore v0.13.0
 	github.com/yookoala/gofast v0.8.0
 	golang.org/x/mod v0.40.0
-	golang.org/x/sys v0.47.0
+	golang.org/x/sys v0.49.0
 	modernc.org/sqlite v1.57.0
 )
 
@@ -33,7 +33,7 @@ require (
 	github.com/ncruces/go-strftime v1.0.0 // indirect
 	github.com/oxtoacart/bpool v0.0.0-20190530202638-03653db5a59c // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
-	golang.org/x/net v0.56.0 // indirect
+	golang.org/x/net v0.62.0 // indirect
 	golang.org/x/tools/godoc v0.1.0-deprecated // indirect
 	howett.net/plist v1.0.0 // indirect
 	modernc.org/libc v1.74.4 // indirect

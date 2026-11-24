@@ -157,7 +157,8 @@ func (process *childDatabase) Running() bool {
 		return false
 	}
 	select {
-	case <-process.done:
+	case exitErr := <-process.done:
+		_ = exitErr // Running reports liveness, not the child's exit status.
 		return false
 	default:
 		return true
@@ -176,7 +177,8 @@ func (process *childDatabase) Close() error {
 	command := process.command
 	process.mu.Unlock()
 	select {
-	case <-process.done:
+	case exitErr := <-process.done:
+		_ = exitErr // A child that already exited needs no shutdown action.
 		return nil
 	default:
 	}
@@ -186,7 +188,8 @@ func (process *childDatabase) Close() error {
 		}
 	}
 	select {
-	case <-process.done:
+	case exitErr := <-process.done:
+		_ = exitErr // Killing the child intentionally produces a nonzero exit status.
 		return nil
 	case <-time.After(5 * time.Second):
 		return errors.New("database process did not exit within 5s")

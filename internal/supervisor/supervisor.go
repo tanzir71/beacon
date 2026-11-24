@@ -620,20 +620,14 @@ func (process *Process) StartContext(ctx context.Context) error {
 		_ = process.Close()
 		return fmt.Errorf("create proxy target: %w", err)
 	}
-	proxy := httputil.NewSingleHostReverseProxy(target)
-	director := proxy.Director
-	proxy.Director = func(request *http.Request) {
-		publicHost := request.Host
-		publicProtocol := "http"
-		if request.TLS != nil {
-			publicProtocol = "https"
-		}
-		director(request)
+	proxy := &httputil.ReverseProxy{}
+	proxy.Rewrite = func(request *httputil.ProxyRequest) {
+		request.SetURL(target)
+		request.Out.Host = request.In.Host
+		request.SetXForwarded()
 		prefix := "/" + process.application.Slug
-		request.Header.Set("X-Forwarded-Prefix", prefix)
-		request.Header.Set("X-Script-Name", prefix)
-		request.Header.Set("X-Forwarded-Host", publicHost)
-		request.Header.Set("X-Forwarded-Proto", publicProtocol)
+		request.Out.Header.Set("X-Forwarded-Prefix", prefix)
+		request.Out.Header.Set("X-Script-Name", prefix)
 	}
 	proxy.ModifyResponse = func(response *http.Response) error {
 		prefix := "/" + process.application.Slug
@@ -709,7 +703,8 @@ func (process *Process) Close() error {
 		}
 		if process.done != nil {
 			select {
-			case <-process.done:
+			case exitErr := <-process.done:
+				_ = exitErr // Close waits for the intentionally stopped child, regardless of its exit status.
 			case <-time.After(5 * time.Second):
 				_ = process.command.Process.Kill()
 				if process.closeErr == nil {
