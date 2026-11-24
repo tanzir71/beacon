@@ -40,8 +40,15 @@ func TestLANChangeReissuesLeafWithinOneMonitorInterval(t *testing.T) {
 		},
 	})
 	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	go monitor.Run(ctx)
+	stopped := make(chan struct{})
+	go func() {
+		defer close(stopped)
+		monitor.Run(ctx)
+	}()
+	defer func() {
+		cancel()
+		<-stopped
+	}()
 	started := time.Now()
 	events <- struct{}{}
 	poll := time.NewTicker(5 * time.Millisecond)
