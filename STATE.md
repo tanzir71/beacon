@@ -2,8 +2,8 @@
 
 **Current milestone:** U1 - The app's own skeleton
 **Last updated:** 2026-11-25
-**Gate status:** green with local GOFLAGS=-p=1; default package-parallel stability remains open
-**Iterations completed:** 10
+**Gate status:** green in isolated offline Linux container; Windows native timing acceptance remains open
+**Iterations completed:** 11
 
 ## Milestone Progress
 
@@ -377,6 +377,57 @@
   BLOCKED-U1-native-package-parallel.md and left that acceptance criterion open.
   Gate/CI source was not changed to serialize or skip tests. Future default
   validation must be uncached to avoid reusing this serialized passing result.
+- Committed locally as `89d3e93`.
+
+### 11: Independently Owned UI Entrypoint
+
+- Restored the pending UI service and its original tests, whose first red
+  compilation was recorded before implementation in iteration 10. Restored the
+  generic http.Handler test helper. Temporary pending copies have been moved
+  back into the repository, not left as divergent source copies.
+- ui.Service.Run now owns preference loading and rendering. Its source receiver
+  clones data and retains one latest snapshot plus one coalesced notification,
+  without waiting on rendering or UI file I/O, including while the UI is stopped.
+- A stable ServeHTTP handler admits requests under the current invocation,
+  merges service cancellation into request contexts, and counts work for joined
+  shutdown. Failed/stopped invocations withdraw readiness; replacement Run is
+  rejected until old requests finish. No listeners or workers start in New.
+- Clarified renderer panic propagation versus normal net/http per-request panic
+  handling. Added both post-Ready error and panic proofs: parent remains live,
+  admitted request is canceled/held in cleanup, overlapping Run is rejected,
+  failure is preserved, and the next Run renders the latest queued snapshot.
+- Normal shutdown, canceled startup, option refresh, corrupted-preference
+  recovery, deep ownership and bounded backlog are also covered. All UI tests
+  passed 100 shuffled native race repetitions (35.728s). Independent review
+  found the earlier proof gaps resolved and no concrete new flaw.
+- The native full gate later failed even with GOFLAGS=-p=1: SSE, slow-command,
+  rename and debounce cases (server 194.548s). That comparison is no longer
+  treated as a reliable workaround. No timeout, assertion or CI change was made.
+- Read-only host inspection after the run showed 68% CPU use, about 23 GiB free
+  memory, no measured disk queue at that instant, and unrelated development
+  processes. These snapshots are not proof of causality; none was terminated.
+- Existing Docker Desktop was started locally for isolated validation. Optional
+  Pinokio search could not connect to its configured control plane; no app was
+  downloaded through it. No remote validation host or GitHub Actions was used.
+- Built `beacon-local-check:20261125` from official Go 1.27.4/Node 24 images,
+  with Python/PHP and full lint. Verified Linux linter archive SHA-256
+  `9b7fe6a6bf6334b98decf8d86b11415ea7889afdabdd1959fdce23af2a9ebcea`.
+- Container setup differences were corrected, not hidden: Python executable
+  alias; --init for orphan reaping; Git executable modes restored after copying
+  from Windows. Observed static fixture mode 755 before / 644 after normalization
+  of 287 tracked files. Contents and application/tests were not altered.
+- The corrected offline Linux full gate exited 0: format, full lint, race tests
+  (server 10.280s), injection, Windows/Linux/macOS zero-CGO builds, optional tray
+  and shipped-file scan. Four CPUs / 6 GiB, /tmp executable tmpfs, no network or
+  published ports, copied source rather than a writable host mount; no GOFLAGS.
+- Reusable machine-local setup is in approved temporary files:
+  `C:\Users\tanzir\AppData\Local\Temp\kilo\beacon-check.Dockerfile` and
+  `beacon-linux-check.cjs`. Build cache volume: beacon-go-build-cache. The stopped
+  owned container beacon-ui-validation-debug holds the validated snapshot and
+  can be removed before the next fresh-copy run. Keep Docker engine available.
+- This is a component entrypoint, not completed command wiring or a new visual
+  shell. Windows acceptance stays open; no U1/B0 completion, pushes, Actions,
+  application dependencies, trust changes or public exposure are claimed.
 
 ## Decisions Made This Build
 
@@ -400,11 +451,11 @@
 
 ## Next Target
 
-Commit the independently verified worker hardening and diagnostics, keeping
-default native-gate stability open. Resume independent UI entrypoint work using
-the disclosed local GOFLAGS=-p=1 orchestration: restore its pending files and
-generic http.Handler helper, add its missing failure/join proofs, then verify.
-Do not mark U1/B0 complete while the native acceptance blocker remains open.
-Then add cancellation-safe Sites/Links adapters and wire cmd/beacon through the
-supervisor. Config, identity, shell, CLI and manifest work remain pending.
-No GitHub Actions or pushes; no timeout/assertion changes or unchanged retries.
+Commit the reviewed UI entrypoint using the valid isolated Linux evidence, then
+add cancellation-safe Sites/Links adapters and wire cmd/beacon through the app
+supervisor with external UI publication. The Sites Run must observe ServiceErrors
+and join its resources; invalidation streams still need explicit cancellation.
+Use fresh source snapshots in the local container and preserve repository file
+modes; do not treat Linux evidence as Windows acceptance. Config, identity,
+shell, CLI and manifest work remain pending. No Actions/pushes, no timeout or
+assertion changes, and no unchanged retries to claim the native blocker closed.

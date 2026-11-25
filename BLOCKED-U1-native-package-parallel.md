@@ -27,16 +27,38 @@ Operation diagnostics now report that work and bounded logs without waiting for
 the manager lock. Watcher reports retain event/debounce/reconciliation facts and
 errors. Neither test's assertions, timeout, or intra-package parallelism changed.
 
-## Local Workaround
+## Serialized Package Comparison
 
 The full native `make check` passed with process-local `GOFLAGS=-p=1`, using
 serialized Go package execution. This retains full lint, race instrumentation,
 every test and its internal parallelism/deadline, version injection, all zero-CGO
 targets, tray build and shipped-file checks. No source gate or CI flags changed.
 
-That one passing comparison is a usable local orchestration result, not proof
-that package scheduling caused the earlier failures. Do not present it as
-unqualified default-gate acceptance, or mark U1/B0 complete because of it.
+That passing comparison did not prove that package scheduling caused the earlier
+failures. A later run with the same GOFLAGS also failed SSE, rename, debounce
+and slow-command timing checks (server package 194.548s). Serialization alone
+is not a reliable workaround. Do not present it as unqualified acceptance or
+mark U1/B0 complete because of it.
+
+## Isolated Linux Validation
+
+The restored UI service passed the unchanged full gate in a local Linux Docker
+container with Go 1.27.4, Node 24, Python 3.11, PHP 8.2 and golangci-lint 2.15.0.
+The container had four CPUs, 6 GiB memory, an executable temporary filesystem,
+no network access, no published ports and no writable host-source mount. The
+source was copied in; Git executable modes were restored inside that copy.
+No Go test scheduling flags, assertions or deadlines were changed for this run.
+
+Initial container setup was corrected rather than changing tests: Debian needed
+the `python` alias, `--init` was needed to reap orphaned command fixtures, and
+Windows-to-container copy had changed a tracked HTML file from 644 to 755,
+causing the existing executable detector to classify it as a command. Restoring
+the Git index modes fixed that reproducible transfer artifact. The corrected
+gate passed, including server race tests in 10.280s and all three zero-CGO builds.
+
+This is valid Linux evidence and a practical local development path. It is not
+Windows acceptance and does not establish the cause of native host timing drift.
+The native default-scheduling criterion remains open.
 
 ## Independently Verified Hardening
 

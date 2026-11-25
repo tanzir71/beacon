@@ -74,7 +74,7 @@ func TestSiteViewKeepsLastGoodHandlerWhenRebuildFails(t *testing.T) {
 	}
 }
 
-func siteViewEntries(t *testing.T, view *SiteView) []indexer.Entry {
+func siteViewEntries(t *testing.T, view http.Handler) []indexer.Entry {
 	t.Helper()
 	request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://beacon.test/_beacon/api/apps", nil)
 	response := httptest.NewRecorder()
