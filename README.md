@@ -1,5 +1,7 @@
 # Blackout Beacon
 
+[Website](https://tanzir71.github.io/beacon/) · [English](https://tanzir71.github.io/beacon/en/) · [Banglish](https://tanzir71.github.io/beacon/bn/)
+
 Blackout Beacon is one app for messages, people and sites. It runs on a computer
 without an account, phone number or required server. It is designed to deliver
 over the internet when available, over Beacon's own network when it is not, and
@@ -50,8 +52,10 @@ its folder-centred setup with a display name and an optional site-folder choice.
 The planned CLI is organised as `beacon sites`, `beacon people`,
 `beacon messages`, `beacon network`, `beacon bundle`, `beacon status`,
 `beacon doctor` and `beacon version`. Unimplemented commands are not advertised
-as usable. There is no public landing page in this source state; B0 generates
-both languages from the supplied copy after U1 is verified.
+as usable. The bilingual website is a development preview, not a claim that
+planned messaging or off-grid features have shipped. `make landing` regenerates
+the root, English and Banglish Pages entrypoints from one template and local
+copy dictionaries. Pages publishes `main /` with no external font or script CDN.
 
 ## Safety And Honest Limits
 

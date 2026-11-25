@@ -1,4 +1,4 @@
-.PHONY: check build test lint run clean
+.PHONY: check build test lint run clean landing
 
 REPO_SLUG := tanzir71/beacon
 
@@ -19,3 +19,6 @@ run:
 
 clean:
 	go clean ./...
+
+landing:
+	go run ./scripts/landing

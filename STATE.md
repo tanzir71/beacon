@@ -3,7 +3,7 @@
 **Current milestone:** U1 - The app's own skeleton
 **Last updated:** 2026-11-25
 **Gate status:** green in isolated offline Linux container; Windows native timing acceptance remains open
-**Iterations completed:** 11
+**Iterations completed:** 12
 
 ## Milestone Progress
 
@@ -37,10 +37,10 @@
 
 - [ ] Unqualified default-scheduled `make check` acceptance is stable; see BLOCKED-U1-native-package-parallel.md.
 - [ ] Beacon install/uninstall preserves an existing Dropserve installation.
-- [ ] Landing translations have identical keys; generated pages are current.
-- [ ] HTML validation, 150 KB budget, and outside-resource checks pass.
+- [x] Landing translations have identical keys; generated pages are current.
+- [x] HTML validation, 150 KB budget, and outside-resource checks pass.
 - [ ] Browser language precedence and privacy tests pass.
-- [ ] Both languages and themes pass axe AA and the 320 px layout check.
+- [x] Both languages and themes pass axe AA and the 320 px layout check.
 - [ ] Empty release metadata produces no dead download links.
 - [ ] ADR-015, ADR-016 (S6) and ADR-017 (delivery paths) are written with verified evidence.
 - [ ] Published Pages URL returns HTTP 200.
@@ -428,6 +428,40 @@
 - This is a component entrypoint, not completed command wiring or a new visual
   shell. Windows acceptance stays open; no U1/B0 completion, pushes, Actions,
   application dependencies, trust changes or public exposure are claimed.
+- Committed as `0d6c9df`; the owner subsequently requested publication of all
+  local commits. All nine ahead-of-origin commits were pushed. Repository Actions
+  were disabled before that push and remain disabled; no workflow was dispatched.
+
+### 12: Repair The Actual GitHub Pages Publishing Root
+
+- Owner set Pages to main / and reported that it rendered the README. Verified
+  Pages source main /, legacy build, public URL https://tanzir71.github.io/beacon/.
+  Root index.html was absent: the README fallback was not a landing-page deploy.
+- This owner-requested public-site correction takes priority over the normal
+  U1-before-B0 implementation order. It does not complete U1 or all of B0.
+- Added a real root index.html plus en/index.html and bn/index.html generated
+  from one Go template and matched local English/Banglish dictionaries. Added
+  .nojekyll, local stylesheet/script, self-hosted Anek Latin and its OFL license,
+  README website/language links, and make landing. No remote font/script CDN.
+- Followed supplied flat Beam/night/day design, with clearly labelled sample
+  interface and reach examples. Prominent development notice and status table
+  distinguish plans from shipped capabilities. No fake or dead binary links.
+- Language selection uses explicit query, saved choice and browser language;
+  manual links work without JS. Theme persists; mobile shares the page link.
+  No country lookup or analytics is performed. S6/ADR-016 and owner read-aloud
+  review remain pending; do not claim complete B0 language-selection acceptance.
+- Generator tests failed before implementation, then passed stale-output,
+  equal-key, full-root-HTML, six-FAQ, no-unverified-download and initial-byte
+  checks: root 74,963 bytes, English 74,977, Banglish 74,606 including CSS/JS/font.
+- html-validate 11.22.1 passed all three outputs after fixing doctype/group
+  semantics. Playwright with axe 4.12.1 passed WCAG AA including 2.2 tags for
+  both languages, day/night and 1440/320 px: no overflow, external requests or
+  script errors. Language precedence, theme persistence and reach demo passed.
+- Full offline Linux gate exited 0 with full lint, race tests, generation tests,
+  injection, all three zero-CGO targets, tray and shipped-file scan. Native
+  Windows timing acceptance remains open as previously recorded.
+- Publication/live landing verification is the remaining step. Do not manually
+  dispatch Actions; use the owner's configured Pages branch publishing source.
 
 ## Decisions Made This Build
 
@@ -451,8 +485,9 @@
 
 ## Next Target
 
-Commit the reviewed UI entrypoint using the valid isolated Linux evidence, then
-add cancellation-safe Sites/Links adapters and wire cmd/beacon through the app
+Publish and verify the corrected Pages entrypoints and About homepage link,
+keeping repository Actions disabled. Then resume cancellation-safe Sites/Links
+adapters and wire cmd/beacon through the app
 supervisor with external UI publication. The Sites Run must observe ServiceErrors
 and join its resources; invalidation streams still need explicit cancellation.
 Use fresh source snapshots in the local container and preserve repository file
