@@ -3,7 +3,7 @@
 **Current milestone:** U1 - The app's own skeleton
 **Last updated:** 2026-11-25
 **Gate status:** green (local full lint/race/cross-build gate; timing risks recorded below)
-**Iterations completed:** 8
+**Iterations completed:** 9
 
 ## Milestone Progress
 
@@ -293,6 +293,38 @@
 - U1 explicitly permits clean empty links/events shells; dashboard SSE is only
   invalidation plumbing and must not be misrepresented as the messaging service.
 - No GitHub Actions, pushes, OS trust or public-exposure actions were performed.
+- Committed locally as `e651790`.
+
+### 9: Independent UI Site Views And Raw Site Publication
+
+- Added failing tests first for independent UI state, UI rebuild failure versus
+  new site routes, cloned presentation data and last-good UI publication.
+- Added indexer.Snapshot as the raw site-data boundary with deep Clone ownership
+  for entries, search filenames, warnings and discovered database allowlists.
+- Moved preferences, last-use/pinned/hidden ordering, UI index persistence,
+  discovered-database presentation callbacks and last-good HTTP handler ownership
+  into ui.SiteView. A UI preference update no longer rescans or rebuilds sites;
+  strengthened the existing durable-preferences integration test to assert this.
+- Site routing snapshots no longer contain a dashboard handler. Options.Publish
+  transfers raw data to an external UI owner after routes are published, without
+  opening UI preferences, writing its cache or rendering interface assets.
+  The callback must enqueue without blocking; the following UI service will
+  provide that bounded receiver under its own supervised context.
+- Nil Publish keeps the current standalone constructor behavior for existing
+  CLI/tests/scripts during migration. This is not full command-entry-point
+  integration: production startup must explicitly select the external boundary
+  and keep UI ownership separate before the U1 wiring criterion is checked.
+- Proved corrupt UI preferences do not prevent externally published Sites from
+  starting; failed UI cache persistence does not prevent a newly added route;
+  and an independently constructed UI's root/status keep answering after the
+  site owner closes. These are boundary proofs, not full service panic injection.
+- An independent review found no concrete correctness/concurrency defect.
+  Fixed one local revive builtin-shadowing finding without changing lint rules.
+- Full local `make check` exited 0 with full lint, race suite (sites/server
+  18.129s), version injection, three zero-CGO targets, tray and shipped scan.
+- Shuffled race repetitions: UI/indexer 50 times (4.844s / 4.587s), plus the
+  port-free boundary/preferences integration group 20 times (3.495s), all green.
+- No dependencies, GitHub Actions, pushes, trust or exposure changes.
 
 ## Decisions Made This Build
 
@@ -316,10 +348,12 @@
 
 ## Next Target
 
-Separate UI snapshot/preferences publication from Sites so UI failure cannot
-prevent site routing, and Sites failure cannot remove the common shell/API.
-Then add cancellation-safe entrypoints and wire cmd/beacon through the supervisor
-without nested services. Links/events may be clean shells in U1, not fake B2
-features. Follow with unified config, identity first run, shell, CLI and manifest
-compatibility. Read this ledger and run `make check` at each iteration start.
-Run fixture suites sequentially. Do not push or run GitHub Actions.
+Add the supervised UI entrypoint: a bounded latest-snapshot receiver whose Run
+owns SiteView creation, rendering and failure, while ServeHTTP stays a stable
+application-owned handler. Then add cancellation-safe Sites/Links entrypoints
+and wire cmd/beacon through the four-service supervisor, explicitly selecting
+external publication. Join streams/monitor work and roll back constructor
+failures before enabling retries. Links/events may be clean shells in U1, not
+fake B2 features. Follow with unified config, identity, shell, CLI and manifest
+compatibility. Run `make check` each iteration and fixture suites sequentially.
+Do not push or run GitHub Actions.

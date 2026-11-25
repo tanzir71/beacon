@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"net/http"
 	"path/filepath"
-	"sort"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -20,17 +19,15 @@ import (
 	"github.com/tanzir71/beacon/internal/sites/indexer"
 	"github.com/tanzir71/beacon/internal/sites/router"
 	"github.com/tanzir71/beacon/internal/sites/scanner"
-	"github.com/tanzir71/beacon/internal/sites/sqlitebrowser"
 	staticserver "github.com/tanzir71/beacon/internal/sites/static"
 	"github.com/tanzir71/beacon/internal/sites/supervisor"
 	"github.com/tanzir71/beacon/internal/sites/watcher"
+	"github.com/tanzir71/beacon/internal/ui"
 	"github.com/tanzir71/beacon/internal/ui/dashboard"
-	"github.com/tanzir71/beacon/internal/ui/preferences"
 )
 
 type snapshot struct {
-	scan      scanner.Result
-	dashboard http.Handler
+	scan scanner.Result
 }
 
 type liveServerConfig struct {
@@ -48,7 +45,7 @@ type Server struct {
 	rebuilds    atomic.Uint64
 	events      *eventHub
 	supervisor  *supervisor.Manager
-	preferences *preferences.Store
+	view        *ui.SiteView
 	liveConfig  atomic.Pointer[liveServerConfig]
 	activityMu  sync.Mutex
 	activityWG  sync.WaitGroup
@@ -80,6 +77,9 @@ type Options struct {
 	RestartApp           func(context.Context, string) error
 	OpenFolder           func(context.Context, string) error
 	Update               func() dashboard.UpdateNotice
+	// Publish transfers raw site data to an external UI owner. It must enqueue
+	// without blocking or rendering. Nil preserves standalone server composition.
+	Publish func(indexer.Snapshot)
 }
 
 // New scans the configured roots and registered apps, then mounts every app.
@@ -105,6 +105,13 @@ func NewWithOptions(options Options) (*Server, error) {
 		events:     newEventHub(),
 		logClients: make(chan struct{}, 64),
 	}
+	if options.Publish == nil {
+		view, err := ui.NewSiteView(options.IndexPath, server.events.publish)
+		if err != nil {
+			return nil, err
+		}
+		server.view = view
+	}
 	previousSupervisorChange := supervisorOptions.OnChange
 	supervisorOptions.OnChange = func() {
 		if previousSupervisorChange != nil {
@@ -114,13 +121,6 @@ func NewWithOptions(options Options) (*Server, error) {
 	}
 	server.supervisor = supervisor.NewManager(supervisorOptions)
 	server.liveConfig.Store(&liveServerConfig{pinToRoot: options.PinToRoot})
-	if options.IndexPath != "" {
-		preferencesStore, err := preferences.Open(filepath.Join(filepath.Dir(options.IndexPath), "dashboard.json"))
-		if err != nil {
-			return nil, err
-		}
-		server.preferences = preferencesStore
-	}
 	handler := http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
 		const maximumRequestBody = 64 << 20
 		if request.ContentLength > maximumRequestBody {
@@ -157,19 +157,18 @@ func NewWithOptions(options Options) (*Server, error) {
 			return
 		}
 		if request.URL.Path == "/" || strings.HasPrefix(request.URL.Path, "/_beacon/") {
-			current := server.snapshot.Load()
-			if current == nil || current.dashboard == nil {
-				http.Error(response, "Beacon is preparing the dashboard.", http.StatusServiceUnavailable)
+			if server.view == nil {
+				http.NotFound(response, request)
 				return
 			}
-			current.dashboard.ServeHTTP(response, request)
+			server.view.ServeHTTP(response, request)
 			return
 		}
 		if request.URL.Path == "/_beacon" {
 			http.Redirect(response, request, "/_beacon/", http.StatusMovedPermanently)
 			return
 		}
-		if server.preferences != nil {
+		if server.view != nil {
 			trimmed := strings.Trim(request.URL.Path, "/")
 			if trimmed != "" && !strings.Contains(trimmed, "/") {
 				server.recordAppUseAsync(trimmed)
@@ -258,22 +257,8 @@ func (server *Server) RebuildCount() uint64 {
 }
 
 func (server *Server) recordAppUse(slug string) {
-	current := server.snapshot.Load()
-	if current == nil || server.preferences == nil {
-		return
-	}
-	found := false
-	for _, application := range current.scan.Apps {
-		if application.Slug == slug {
-			found = true
-			break
-		}
-	}
-	if !found {
-		return
-	}
-	if err := server.preferences.Touch(slug); err == nil {
-		_ = server.reconcile()
+	if server.view != nil {
+		_ = server.view.Touch(slug)
 	}
 }
 
@@ -367,32 +352,6 @@ func (server *Server) reconcileLocked() error {
 		return err
 	}
 	entries := indexer.Build(result.Apps)
-	if server.preferences != nil {
-		for index := range entries {
-			settings := server.preferences.Get(entries[index].Slug)
-			if settings.Pinned != nil {
-				entries[index].Pinned = *settings.Pinned
-			}
-			if settings.Hidden != nil {
-				entries[index].Hidden = *settings.Hidden
-			}
-			if !settings.LastUsed.IsZero() {
-				entries[index].LastUsed = settings.LastUsed.Unix()
-			}
-		}
-	}
-	sort.SliceStable(entries, func(first, second int) bool {
-		if entries[first].Pinned != entries[second].Pinned {
-			return entries[first].Pinned
-		}
-		if entries[first].LastUsed != entries[second].LastUsed {
-			return entries[first].LastUsed > entries[second].LastUsed
-		}
-		if entries[first].MTime != entries[second].MTime {
-			return entries[first].MTime > entries[second].MTime
-		}
-		return strings.ToLower(entries[first].Name) < strings.ToLower(entries[second].Name)
-	})
 	databasePaths := make(map[string]map[string]string)
 	for _, application := range result.Apps {
 		if len(application.Databases) == 0 {
@@ -404,13 +363,6 @@ func (server *Server) reconcileLocked() error {
 		}
 		databasePaths[application.Slug] = files
 	}
-	if server.options.IndexPath != "" {
-		if err := indexer.Save(server.options.IndexPath, entries); err != nil {
-			return err
-		}
-	}
-	warnings := append([]string{}, server.options.Warnings...)
-	warnings = append(warnings, warningMessages(result.Warnings)...)
 	appWarnings := make(map[string][]string)
 	for _, warning := range result.Warnings {
 		for _, application := range result.Apps {
@@ -421,11 +373,30 @@ func (server *Server) reconcileLocked() error {
 			}
 		}
 	}
-	dashboardHandler, err := dashboard.NewWithOptions(entries, dashboard.Options{
+	publication := indexer.Snapshot{
+		Entries: entries, Warnings: warningMessages(result.Warnings),
+		AppWarnings: appWarnings, Databases: databasePaths,
+	}
+	if server.view != nil {
+		if err := server.view.Publish(publication, server.dashboardOptions()); err != nil {
+			return err
+		}
+	}
+	server.router.Swap(mounts)
+	server.snapshot.Store(&snapshot{scan: result})
+	server.rebuilds.Add(1)
+	if server.options.Publish != nil {
+		server.options.Publish(publication)
+	}
+	server.events.publish()
+	return nil
+}
+
+func (server *Server) dashboardOptions() dashboard.Options {
+	return dashboard.Options{
 		Title:                server.options.DashboardTitle,
 		Theme:                server.options.DashboardTheme,
-		Warnings:             warnings,
-		AppWarnings:          appWarnings,
+		Warnings:             server.options.Warnings,
 		Discovery:            server.options.Discovery,
 		Funnel:               server.options.Funnel,
 		SetTailscaleServe:    server.options.SetTailscaleServe,
@@ -444,36 +415,8 @@ func (server *Server) reconcileLocked() error {
 		},
 		OpenFolder: server.options.OpenFolder,
 		Rescan:     server.Reconcile,
-		ChangeAppSettings: func(_ context.Context, slug string, change dashboard.AppSettingsChange) error {
-			if server.preferences == nil {
-				return errors.New("dashboard preferences are unavailable")
-			}
-			if err := server.preferences.Set(slug, change.Pinned, change.Hidden); err != nil {
-				return err
-			}
-			return server.Reconcile()
-		},
-		Update: server.options.Update,
-		BrowseDatabase: func(ctx context.Context, slug, file string) (sqlitebrowser.Snapshot, error) {
-			files, found := databasePaths[slug]
-			if !found {
-				return sqlitebrowser.Snapshot{}, errors.New("app has no discovered databases")
-			}
-			path, found := files[file]
-			if !found {
-				return sqlitebrowser.Snapshot{}, errors.New("database was not discovered in this app")
-			}
-			return sqlitebrowser.Browse(ctx, path)
-		},
-	})
-	if err != nil {
-		return err
+		Update:     server.options.Update,
 	}
-	server.router.Swap(mounts)
-	server.snapshot.Store(&snapshot{scan: result, dashboard: dashboardHandler})
-	server.rebuilds.Add(1)
-	server.events.publish()
-	return nil
 }
 
 func needsPHPRuntimeHandler() http.Handler {

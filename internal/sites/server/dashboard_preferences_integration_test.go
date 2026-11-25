@@ -31,6 +31,7 @@ func TestDashboardPreferencesPersistAndSortByPinThenLastUse(t *testing.T) {
 		t.Fatal(err)
 	}
 	cleanupServer(t, server)
+	initialRebuilds := server.RebuildCount()
 
 	request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://beacon.test/alpha/", nil)
 	response := httptest.NewRecorder()
@@ -55,6 +56,9 @@ func TestDashboardPreferencesPersistAndSortByPinThenLastUse(t *testing.T) {
 	postPreference(t, server, "beta", `{"hidden":true}`)
 	if visible := preferenceEntries(t, server, false); len(visible) != 1 || visible[0].Slug != "alpha" {
 		t.Fatalf("visible entries after hide = %#v", visible)
+	}
+	if server.RebuildCount() != initialRebuilds {
+		t.Fatal("UI preference changes unnecessarily rebuilt site routes")
 	}
 	if err := server.Close(); err != nil {
 		t.Fatalf("close first server: %v", err)
