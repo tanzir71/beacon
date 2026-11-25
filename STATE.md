@@ -43,7 +43,7 @@
 - [x] Both languages and themes pass axe AA and the 320 px layout check.
 - [ ] Empty release metadata produces no dead download links.
 - [ ] ADR-015, ADR-016 (S6) and ADR-017 (delivery paths) are written with verified evidence.
-- [ ] Published Pages URL returns HTTP 200.
+- [x] Published Pages URL returns HTTP 200.
 - [ ] Demo transcript, commit, milestone tag, push, and binary pre-release exist.
 
 ## Starting Point
@@ -460,8 +460,14 @@
 - Full offline Linux gate exited 0 with full lint, race tests, generation tests,
   injection, all three zero-CGO targets, tray and shipped-file scan. Native
   Windows timing acceptance remains open as previously recorded.
-- Publication/live landing verification is the remaining step. Do not manually
-  dispatch Actions; use the owner's configured Pages branch publishing source.
+- Committed and pushed as `513989b`. Verified live on 2026-11-25 after the
+  configured Pages deployment: root serves the real hero/landing document with
+  HTTP 200 rather than the README; /en/ and /bn/ serve their correct language
+  documents; CSS, JavaScript and the local font all return HTTP 200.
+- Repository About homepage is https://tanzir71.github.io/beacon/, matching the
+  README links. Repository Actions remain disabled. No workflow or manual build
+  was dispatched; used the owner's configured main / Pages source.
+- The temporary loopback preview server was stopped after browser validation.
 
 ## Decisions Made This Build
 
@@ -485,8 +491,7 @@
 
 ## Next Target
 
-Publish and verify the corrected Pages entrypoints and About homepage link,
-keeping repository Actions disabled. Then resume cancellation-safe Sites/Links
+The public Pages correction is complete. Resume cancellation-safe Sites/Links
 adapters and wire cmd/beacon through the app
 supervisor with external UI publication. The Sites Run must observe ServiceErrors
 and join its resources; invalidation streams still need explicit cancellation.
