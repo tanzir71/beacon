@@ -30,6 +30,11 @@ func TestServerLifecycleNeverInstallsTrustWithoutExplicitAction(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create server: %v", err)
 	}
+	t.Cleanup(func() {
+		if err := server.Close(); err != nil {
+			t.Errorf("close server: %v", err)
+		}
+	})
 	response := httptest.NewRecorder()
 	server.Handler().ServeHTTP(response, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/", nil))
 	if response.Code != http.StatusOK {

@@ -30,6 +30,7 @@ func TestDashboardPreferencesPersistAndSortByPinThenLastUse(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	cleanupServer(t, server)
 
 	request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://beacon.test/alpha/", nil)
 	response := httptest.NewRecorder()

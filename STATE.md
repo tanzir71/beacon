@@ -2,8 +2,8 @@
 
 **Current milestone:** U1 - The app's own skeleton
 **Last updated:** 2026-11-24
-**Gate status:** green (local full lint/race/cross-build gate)
-**Iterations completed:** 4
+**Gate status:** green (local full lint/race/cross-build gate; timing risks recorded below)
+**Iterations completed:** 5
 
 ## Milestone Progress
 
@@ -180,6 +180,36 @@
 - UI, setup, manifest compatibility and CLI runtime changes remain unchecked;
   no U1 completion claim is made by this documentation pass.
 
+### 5: Test Watcher Ownership Repair Before The Move-Only Commit
+
+- Pre-move full local `make check` was green. Mechanically moved 27 complete
+  package trees and adjusted import/linker/source/fixture paths only.
+- First post-move full race run failed `TestSSEStreamSurvivesThreeAppChanges`:
+  `no apps-changed event for change 3` after 4.29 seconds. Full lint passed.
+- This is treated as a failing flaky test, not accepted by retrying. Reversed
+  only the uncommitted mechanical move and verified a clean worktree before
+  recording this incident. Diagnosis/repair will be a separate [U1] commit so
+  the eventual layout commit contains no behavior changes. No deadlines or
+  event assertions have been weakened. No GitHub Actions were run.
+- Diagnostic stress could not reproduce the original SSE timeout: isolated
+  30/30, mixed live-watcher 50/50, traced mixed 50/50 and wider shuffled 15/15
+  passed. Its exact cause remains unproven and is retained as a timing risk.
+- Native Windows traces did prove orphaned test watchers falling back to the
+  shared TEMP directory after their owned roots were removed. The independent
+  ownership audit found 11 never-closed servers plus two fatal-path gaps.
+- Added immediate cleanup ownership to all 13 constructor results across
+  dashboard, preference and trust-lifecycle tests. Preserved explicit early
+  Close calls and every assertion/deadline. Production code is unchanged.
+- An invalid concurrent verification attempt ran two full fixture processes;
+  they reached each other's command apps and failed on wrong response bodies.
+  The 7400-7999 reservation map is process-local. Run whole suites sequentially,
+  preserving each suite's usual internal parallelism; do not change test limits.
+- With only one fixture suite active, full `make check` exited 0; shuffled
+  `go test -race -count=3 -shuffle=on ./internal/server` exited 0 (59.177s).
+- Full native-traced race suite exited 0 with zero `AddWith` calls for shared
+  TEMP. This verifies the demonstrated watcher leak was removed, not that the
+  original one-off SSE timeout's causality has been conclusively established.
+
 ## Decisions Made This Build
 
 - Revision 1.2 is authoritative. Earlier product architecture decisions and
@@ -202,6 +232,7 @@
 
 ## Next Target
 
-Make the behavior-preserving package-move commit before implementing the app
-supervisor. No further B0 features until U1 passes. Read this ledger and run
-`make check` at the start of each iteration. Do not push or run GitHub Actions.
+Commit test watcher ownership repair, then redo the behavior-preserving move.
+No further B0 features until U1 passes. Read this ledger and run `make check`
+at the start of each iteration. Run fixture suites sequentially. Do not push
+or run GitHub Actions.

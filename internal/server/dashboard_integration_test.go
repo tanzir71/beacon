@@ -30,6 +30,7 @@ func TestDashboardAtRoot(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create server: %v", err)
 	}
+	cleanupServer(t, server)
 	request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://beacon.test/", nil)
 	response := httptest.NewRecorder()
 	server.Handler().ServeHTTP(response, request)
@@ -77,13 +78,14 @@ func TestServerPersistsIndexOutsideAppRoot(t *testing.T) {
 	writeDashboardFixture(t, root, "ledger", "Ledger", "Tracks local records.")
 	stateDirectory := t.TempDir()
 	indexPath := filepath.Join(stateDirectory, "index.json")
-	_, err := beaconr.NewWithOptions(beaconr.Options{
+	server, err := beaconr.NewWithOptions(beaconr.Options{
 		Scanner:   scanner.Options{Roots: []string{root}},
 		IndexPath: indexPath,
 	})
 	if err != nil {
 		t.Fatalf("create persistent server: %v", err)
 	}
+	cleanupServer(t, server)
 	entries, err := indexer.Load(indexPath)
 	if err != nil {
 		t.Fatalf("load persisted server index: %v", err)
@@ -114,6 +116,7 @@ func TestDashboardHandlesZeroAndTwoHundredApps(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create empty dashboard: %v", err)
 	}
+	cleanupServer(t, emptyServer)
 	emptyEntries := fetchAppSlugs(t, emptyServer.Handler())
 	if emptyEntries == nil || len(emptyEntries) != 0 {
 		t.Fatalf("empty dashboard entries = %#v, want non-nil empty list", emptyEntries)
@@ -128,6 +131,7 @@ func TestDashboardHandlesZeroAndTwoHundredApps(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create 200-app dashboard: %v", err)
 	}
+	cleanupServer(t, largeServer)
 	largeEntries := fetchAppSlugs(t, largeServer.Handler())
 	if len(largeEntries) != 200 {
 		t.Fatalf("large dashboard returned %d apps, want 200", len(largeEntries))
@@ -150,6 +154,7 @@ func TestBeaconNamespaceCannotBeShadowed(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create reserved-route server: %v", err)
 	}
+	cleanupServer(t, server)
 
 	apps := fetchAppSlugs(t, server.Handler())
 	if len(apps) != 0 {
@@ -188,6 +193,7 @@ func TestDashboardReadOnlyOperationalAPIs(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create operational API server: %v", err)
 	}
+	cleanupServer(t, server)
 	httpServer := httptest.NewServer(server.Handler())
 	defer httpServer.Close()
 
@@ -295,6 +301,7 @@ func TestQREndpointReturnsPNG(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create QR server: %v", err)
 	}
+	cleanupServer(t, server)
 	firstURL := "http://example.test/static/"
 	first := requestQR(t, server.Handler(), firstURL)
 	if first.StatusCode != http.StatusOK {
@@ -358,6 +365,7 @@ func TestSearchFindsREADMEContent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create search server: %v", err)
 	}
+	cleanupServer(t, server)
 	request := httptest.NewRequestWithContext(
 		context.Background(),
 		http.MethodGet,
@@ -406,6 +414,7 @@ func TestSearchFindsFilename(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create search server: %v", err)
 	}
+	cleanupServer(t, server)
 	request := httptest.NewRequestWithContext(
 		context.Background(),
 		http.MethodGet,
@@ -446,6 +455,7 @@ func TestSearchRanksNameAboveFilename(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create ranking server: %v", err)
 	}
+	cleanupServer(t, server)
 	request := httptest.NewRequestWithContext(
 		context.Background(),
 		http.MethodGet,
@@ -479,6 +489,7 @@ func TestAdvertisedURLsAllRespond(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create URL server: %v", err)
 	}
+	cleanupServer(t, server)
 	httpServer := httptest.NewServer(server.Handler())
 	defer httpServer.Close()
 
@@ -526,6 +537,15 @@ func TestAdvertisedURLsAllRespond(t *testing.T) {
 			t.Fatalf("advertised %s URL %q returned %d, want < 400", item.Kind, item.URL, result.StatusCode)
 		}
 	}
+}
+
+func cleanupServer(t *testing.T, server *beaconr.Server) {
+	t.Helper()
+	t.Cleanup(func() {
+		if err := server.Close(); err != nil {
+			t.Errorf("close server: %v", err)
+		}
+	})
 }
 
 func writeDashboardFixture(t *testing.T, root, name, title, readmeParagraph string) {
