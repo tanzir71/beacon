@@ -341,7 +341,7 @@ func withEnv(base []string, values map[string]string) []string {
 }
 
 func linkFlags(version, commit string) string {
-	return fmt.Sprintf("-X %s/internal/version.Version=%s -X %s/internal/version.Commit=%s", modulePath, version, modulePath, commit)
+	return fmt.Sprintf("-X %s/internal/platform/version.Version=%s -X %s/internal/platform/version.Commit=%s", modulePath, version, modulePath, commit)
 }
 
 func gitCommit() string {

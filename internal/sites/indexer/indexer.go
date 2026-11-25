@@ -1,0 +1,474 @@
+// Package indexer builds the read-only dashboard view of discovered apps.
+package indexer
+
+import (
+	"bufio"
+	"hash/fnv"
+	"html"
+	"io"
+	"net/url"
+	"os"
+	"path/filepath"
+	"sort"
+	"strconv"
+	"strings"
+	"unicode/utf8"
+
+	"github.com/tanzir71/beacon/internal/sites/app"
+)
+
+// URLs contains verified ways to reach an app.
+type URLs struct {
+	Path string `json:"path"`
+	Own  string `json:"own,omitempty"`
+}
+
+// Entry is the stable public dashboard representation of one app.
+type Entry struct {
+	Slug           string   `json:"slug"`
+	Name           string   `json:"name"`
+	Path           string   `json:"path"`
+	Description    string   `json:"description"`
+	Tags           []string `json:"tags,omitempty"`
+	Visibility     string   `json:"visibility"`
+	Title          string   `json:"title,omitempty"`
+	Heading        string   `json:"heading,omitempty"`
+	Type           string   `json:"type"`
+	Runtime        string   `json:"runtime,omitempty"`
+	Status         string   `json:"status"`
+	Detection      string   `json:"detection"`
+	URLs           URLs     `json:"urls"`
+	Icon           string   `json:"icon,omitempty"`
+	IconKind       string   `json:"icon_kind"`
+	IconColor      string   `json:"icon_color,omitempty"`
+	Size           int64    `json:"size"`
+	MTime          int64    `json:"mtime"`
+	Port           int      `json:"port,omitempty"`
+	PrefersOwnPort bool     `json:"prefers_own_port,omitempty"`
+	Databases      []string `json:"databases,omitempty"`
+	Pinned         bool     `json:"pinned,omitempty"`
+	Hidden         bool     `json:"hidden,omitempty"`
+	LastUsed       int64    `json:"last_used,omitempty"`
+	fileNames      []string
+}
+
+// FileAccess is the read-only I/O boundary used while building an index.
+type FileAccess interface {
+	Open(path string) (io.ReadCloser, error)
+	Lstat(path string) (os.FileInfo, error)
+	IsCloudPlaceholder(path string, info os.FileInfo) (bool, error)
+}
+
+// BuildOptions supplies injectable read-only filesystem behavior.
+type BuildOptions struct {
+	Files FileAccess
+}
+
+type osFileAccess struct{}
+
+func (osFileAccess) Open(path string) (io.ReadCloser, error) {
+	// #nosec G304,G122 -- callers pass paths from the read-only scanner snapshot.
+	return os.Open(path)
+}
+
+func (osFileAccess) Lstat(path string) (os.FileInfo, error) {
+	// #nosec G304,G122 -- callers pass paths from the read-only scanner snapshot.
+	return os.Lstat(path)
+}
+
+func (osFileAccess) IsCloudPlaceholder(path string, info os.FileInfo) (bool, error) {
+	return isCloudPlaceholder(path, info)
+}
+
+// Build returns an immutable dashboard snapshot in scanner order.
+func Build(applications []app.App) []Entry {
+	return BuildWithOptions(applications, BuildOptions{})
+}
+
+// BuildWithOptions returns a snapshot through an injectable read-only filesystem boundary.
+func BuildWithOptions(applications []app.App, options BuildOptions) []Entry {
+	files := options.Files
+	if files == nil {
+		files = osFileAccess{}
+	}
+	entries := make([]Entry, 0, len(applications))
+	for _, application := range applications {
+		title, heading := readHTMLMetadata(files, application)
+		size, modified := fileMetadata(files, application.Path, application.LooseFile)
+		icon, iconKind, iconColor := appIcon(files, application)
+		status := application.Status
+		if status == "" {
+			status = "ready"
+		}
+		urls := URLs{Path: "/" + strings.Trim(application.Slug, "/") + "/"}
+		if application.Port != 0 {
+			urls.Own = "http://127.0.0.1:" + strconv.Itoa(application.Port) + "/"
+		}
+		description := application.Description
+		if description == "" {
+			description = readDescription(files, application.Path, application.LooseFile)
+		}
+		entry := Entry{
+			Slug:           application.Slug,
+			Name:           application.Name,
+			Path:           application.Path,
+			Description:    description,
+			Tags:           append([]string(nil), application.Tags...),
+			Visibility:     application.Visibility,
+			Title:          title,
+			Heading:        heading,
+			Type:           string(application.Kind),
+			Runtime:        application.Runtime,
+			Status:         status,
+			Detection:      detectionReason(application),
+			URLs:           urls,
+			Icon:           icon,
+			IconKind:       iconKind,
+			IconColor:      iconColor,
+			Size:           size,
+			MTime:          modified,
+			Port:           application.Port,
+			PrefersOwnPort: application.PrefersOwnPort,
+			Databases:      append([]string(nil), application.Databases...),
+			Pinned:         application.Pinned,
+			Hidden:         application.Hidden,
+			fileNames:      indexFileNames(application.Path, application.LooseFile),
+		}
+		entries = append(entries, entry)
+	}
+	return entries
+}
+
+func detectionReason(application app.App) string {
+	if application.Detection != "" {
+		return application.Detection
+	}
+	if application.LooseFile {
+		return "Static HTML file"
+	}
+	if application.Index != "" {
+		return "Static files with " + application.Index
+	}
+	return "Static files with directory listing"
+}
+
+// Search returns matching entries ordered by weighted field relevance.
+func Search(entries []Entry, query string) []Entry {
+	query = strings.TrimSpace(strings.ToLower(query))
+	if query == "" {
+		return append([]Entry(nil), entries...)
+	}
+	type scoredEntry struct {
+		entry Entry
+		score int
+	}
+	scored := make([]scoredEntry, 0, len(entries))
+	for _, entry := range entries {
+		score := 0
+		if fieldMatches(entry.Name, query) || fieldMatches(entry.Slug, query) {
+			score += 5
+		}
+		if fieldMatches(entry.Description, query) {
+			score += 3
+		}
+		if fieldMatches(entry.Title, query) || fieldMatches(entry.Heading, query) {
+			score += 3
+		}
+		for _, tag := range entry.Tags {
+			if fieldMatches(tag, query) {
+				score += 3
+				break
+			}
+		}
+		for _, fileName := range entry.fileNames {
+			if fieldMatches(fileName, query) {
+				score++
+				break
+			}
+		}
+		if score != 0 {
+			scored = append(scored, scoredEntry{entry: entry, score: score})
+		}
+	}
+	sort.SliceStable(scored, func(first, second int) bool {
+		return scored[first].score > scored[second].score
+	})
+	results := make([]Entry, len(scored))
+	for index, item := range scored {
+		results[index] = item.entry
+	}
+	return results
+}
+
+func readHTMLMetadata(files FileAccess, application app.App) (string, string) {
+	indexPath := application.Path
+	if !application.LooseFile {
+		if application.Index == "" {
+			return "", ""
+		}
+		indexPath = filepath.Join(application.Path, application.Index)
+	}
+	if _, readable := readableFile(files, indexPath); !readable {
+		return "", ""
+	}
+	file, err := files.Open(indexPath)
+	if err != nil {
+		return "", ""
+	}
+	defer func() {
+		_ = file.Close()
+	}()
+	content, err := io.ReadAll(io.LimitReader(file, 2<<20))
+	if err != nil {
+		return "", ""
+	}
+	document := string(content)
+	return elementText(document, "title"), elementText(document, "h1")
+}
+
+func elementText(document, tag string) string {
+	lowerDocument := strings.ToLower(document)
+	opening := "<" + tag
+	closing := "</" + tag + ">"
+	searchFrom := 0
+	for {
+		startOffset := strings.Index(lowerDocument[searchFrom:], opening)
+		if startOffset < 0 {
+			return ""
+		}
+		start := searchFrom + startOffset
+		boundary := start + len(opening)
+		if boundary < len(lowerDocument) {
+			character := lowerDocument[boundary]
+			if character != '>' && character != ' ' && character != '\t' && character != '\r' && character != '\n' {
+				searchFrom = boundary
+				continue
+			}
+		}
+		openingEndOffset := strings.IndexByte(lowerDocument[boundary:], '>')
+		if openingEndOffset < 0 {
+			return ""
+		}
+		contentStart := boundary + openingEndOffset + 1
+		contentEndOffset := strings.Index(lowerDocument[contentStart:], closing)
+		if contentEndOffset < 0 {
+			return ""
+		}
+		return cleanElementText(document[contentStart : contentStart+contentEndOffset])
+	}
+}
+
+func cleanElementText(content string) string {
+	var text strings.Builder
+	inTag := false
+	for _, character := range content {
+		switch character {
+		case '<':
+			inTag = true
+		case '>':
+			inTag = false
+		default:
+			if !inTag {
+				text.WriteRune(character)
+			}
+		}
+	}
+	return strings.Join(strings.Fields(html.UnescapeString(text.String())), " ")
+}
+
+func fileMetadata(files FileAccess, appPath string, looseFile bool) (int64, int64) {
+	if looseFile {
+		info, readable := readableFile(files, appPath)
+		if !readable {
+			return 0, 0
+		}
+		return info.Size(), info.ModTime().UnixMilli()
+	}
+	var size int64
+	var modified int64
+	_ = filepath.WalkDir(appPath, func(path string, entry os.DirEntry, walkErr error) error {
+		if walkErr != nil || entry.IsDir() {
+			return nil
+		}
+		info, readable := readableFile(files, path)
+		if !readable {
+			return nil
+		}
+		size += info.Size()
+		if timestamp := info.ModTime().UnixMilli(); timestamp > modified {
+			modified = timestamp
+		}
+		return nil
+	})
+	return size, modified
+}
+
+func appIcon(files FileAccess, application app.App) (string, string, string) {
+	if !application.LooseFile {
+		for _, name := range []string{"favicon.ico", "icon.png"} {
+			candidate := filepath.Join(application.Path, name)
+			if _, readable := readableFile(files, candidate); readable {
+				return "/" + application.Slug + "/" + name, "image", ""
+			}
+		}
+	}
+	if application.Icon != "" {
+		manifestPath := filepath.Join(application.Path, filepath.FromSlash(application.Icon))
+		if info, readable := readableFile(files, manifestPath); readable && !info.IsDir() {
+			segments := strings.Split(filepath.ToSlash(application.Icon), "/")
+			for index := range segments {
+				segments[index] = url.PathEscape(segments[index])
+			}
+			return "/" + application.Slug + "/" + strings.Join(segments, "/"), "image", ""
+		}
+		return application.Icon, "monogram", monogramColor(application.Slug)
+	}
+	return monogram(application.Name), "monogram", monogramColor(application.Slug)
+}
+
+func monogram(name string) string {
+	words := strings.Fields(name)
+	if len(words) == 0 {
+		return "?"
+	}
+	first := []rune(words[0])
+	letters := string(first[0])
+	if len(words) > 1 {
+		last := []rune(words[len(words)-1])
+		letters += string(last[0])
+	}
+	return strings.ToUpper(letters)
+}
+
+func monogramColor(slug string) string {
+	palette := [...]string{"#156b50", "#3d5d9a", "#9a5b3d", "#77519d", "#a06d18", "#327b82"}
+	hash := fnv.New32a()
+	_, _ = hash.Write([]byte(slug))
+	return palette[int(hash.Sum32())%len(palette)]
+}
+
+func indexFileNames(appPath string, looseFile bool) []string {
+	if looseFile {
+		return []string{filepath.Base(appPath)}
+	}
+	const maximumFiles = 5_000
+	fileNames := make([]string, 0, 32)
+	_ = filepath.WalkDir(appPath, func(path string, entry os.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return nil
+		}
+		relative, err := filepath.Rel(appPath, path)
+		if err != nil || relative == "." {
+			return nil
+		}
+		depth := strings.Count(filepath.ToSlash(relative), "/") + 1
+		if entry.IsDir() {
+			if ignoredIndexDirectory(entry.Name()) || depth >= 3 {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		if depth > 3 {
+			return nil
+		}
+		fileNames = append(fileNames, entry.Name())
+		if len(fileNames) >= maximumFiles {
+			return filepath.SkipAll
+		}
+		return nil
+	})
+	return fileNames
+}
+
+func ignoredIndexDirectory(name string) bool {
+	switch strings.ToLower(name) {
+	case ".git", "node_modules", "venv", ".venv", "__pycache__", "vendor":
+		return true
+	default:
+		return strings.HasPrefix(name, ".")
+	}
+}
+
+func fieldMatches(value, query string) bool {
+	value = strings.ToLower(value)
+	if strings.Contains(value, query) {
+		return true
+	}
+	queryTokens := strings.Fields(query)
+	valueTokens := strings.FieldsFunc(value, func(character rune) bool {
+		return (character < 'a' || character > 'z') && (character < '0' || character > '9')
+	})
+	for _, queryToken := range queryTokens {
+		matched := false
+		for _, valueToken := range valueTokens {
+			if strings.HasPrefix(valueToken, queryToken) {
+				matched = true
+				break
+			}
+		}
+		if !matched {
+			return false
+		}
+	}
+	return len(queryTokens) != 0
+}
+
+func readDescription(files FileAccess, appPath string, looseFile bool) string {
+	if looseFile {
+		return ""
+	}
+	for _, name := range []string{"README.md", "README.txt"} {
+		candidate := filepath.Join(appPath, name)
+		_, readable := readableFile(files, candidate)
+		if !readable {
+			continue
+		}
+		file, err := files.Open(candidate)
+		if err != nil {
+			return ""
+		}
+		description := firstParagraph(io.LimitReader(file, 64<<10))
+		_ = file.Close()
+		return description
+	}
+	return ""
+}
+
+func readableFile(files FileAccess, path string) (os.FileInfo, bool) {
+	info, err := files.Lstat(path)
+	if err != nil || !info.Mode().IsRegular() {
+		return nil, false
+	}
+	placeholder, err := files.IsCloudPlaceholder(path, info)
+	if err != nil || placeholder {
+		return nil, false
+	}
+	return info, true
+}
+
+func firstParagraph(reader io.Reader) string {
+	scanner := bufio.NewScanner(reader)
+	paragraph := make([]string, 0, 4)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" {
+			if len(paragraph) != 0 {
+				break
+			}
+			continue
+		}
+		if strings.HasPrefix(line, "#") && len(paragraph) == 0 {
+			continue
+		}
+		paragraph = append(paragraph, line)
+	}
+	return truncate(strings.Join(paragraph, " "), 200)
+}
+
+func truncate(value string, maximum int) string {
+	if utf8.RuneCountInString(value) <= maximum {
+		return value
+	}
+	runes := []rune(value)
+	return string(runes[:maximum])
+}

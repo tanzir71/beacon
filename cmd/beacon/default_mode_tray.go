@@ -14,10 +14,10 @@ import (
 	"sync"
 
 	"github.com/getlantern/systray"
-	"github.com/tanzir71/beacon/internal/autostart"
-	"github.com/tanzir71/beacon/internal/dashboard"
-	"github.com/tanzir71/beacon/internal/launch"
-	"github.com/tanzir71/beacon/internal/traymenu"
+	"github.com/tanzir71/beacon/internal/platform/autostart"
+	"github.com/tanzir71/beacon/internal/platform/launch"
+	"github.com/tanzir71/beacon/internal/platform/traymenu"
+	"github.com/tanzir71/beacon/internal/ui/dashboard"
 )
 
 type trayRun struct {

@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/tanzir71/beacon/internal/config"
-	"github.com/tanzir71/beacon/internal/state"
+	"github.com/tanzir71/beacon/internal/platform/config"
+	"github.com/tanzir71/beacon/internal/platform/state"
 )
 
 func TestBeaconStorageDoesNotUseDropserveDirectories(t *testing.T) {
@@ -32,10 +32,10 @@ func TestBeaconStorageDoesNotUseDropserveDirectories(t *testing.T) {
 func TestBeaconInstallationIdentifiersAreIndependent(t *testing.T) {
 	for path, required := range map[string][]string{
 		"../go.mod": {"module github.com/tanzir71/beacon"},
-		"../internal/autostart/autostart_windows.go": {`const taskName = "Beacon"`},
-		"../internal/autostart/autostart_linux.go":   {`const systemdUnitName = "beacon.service"`},
-		"../internal/autostart/launchd.go":           {`const launchAgentLabel = "dev.beacon.agent"`},
-		"../cmd/beacon/cli_commands.go":              {"name=Beacon"},
+		"../internal/platform/autostart/autostart_windows.go": {`const taskName = "Beacon"`},
+		"../internal/platform/autostart/autostart_linux.go":   {`const systemdUnitName = "beacon.service"`},
+		"../internal/platform/autostart/launchd.go":           {`const launchAgentLabel = "dev.beacon.agent"`},
+		"../cmd/beacon/cli_commands.go":                       {"name=Beacon"},
 		"../packaging/windows/beacon.iss": {
 			"AppName=Beacon", `DefaultDirName={autopf}\Beacon`,
 			`Source: "{#SourceDir}\beacon.exe"`, `Source: "{#SourceDir}\beacon-cli.exe"`,

@@ -20,6 +20,6 @@ jobs:
           go-version: stable
           cache: true
       - name: Fuzz slug sanitiser for 60 seconds
-        run: go test ./internal/scanner -run=^$ -fuzz=^FuzzSlugSanitiser$ -fuzztime=60s
+        run: go test ./internal/sites/scanner -run=^$ -fuzz=^FuzzSlugSanitiser$ -fuzztime=60s
       - name: Fuzz path resolver for 60 seconds
-        run: go test ./internal/static -run=^$ -fuzz=^FuzzPathResolver$ -fuzztime=60s
+        run: go test ./internal/sites/static -run=^$ -fuzz=^FuzzPathResolver$ -fuzztime=60s

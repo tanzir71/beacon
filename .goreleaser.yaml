@@ -17,7 +17,7 @@ builds:
     flags:
       - -trimpath
     ldflags:
-      - -s -w -X github.com/tanzir71/beacon/internal/version.Version={{.Version}} -X github.com/tanzir71/beacon/internal/version.Commit={{.Commit}}
+      - -s -w -X github.com/tanzir71/beacon/internal/platform/version.Version={{.Version}} -X github.com/tanzir71/beacon/internal/platform/version.Commit={{.Commit}}
 
   - id: beacon-windows
     main: ./cmd/beacon
@@ -34,7 +34,7 @@ builds:
     flags:
       - -trimpath
     ldflags:
-      - -s -w -H=windowsgui -X github.com/tanzir71/beacon/internal/version.Version={{.Version}} -X github.com/tanzir71/beacon/internal/version.Commit={{.Commit}}
+      - -s -w -H=windowsgui -X github.com/tanzir71/beacon/internal/platform/version.Version={{.Version}} -X github.com/tanzir71/beacon/internal/platform/version.Commit={{.Commit}}
 
   - id: beacon-cli-windows
     main: ./cmd/beacon
@@ -49,7 +49,7 @@ builds:
     flags:
       - -trimpath
     ldflags:
-      - -s -w -X github.com/tanzir71/beacon/internal/version.Version={{.Version}} -X github.com/tanzir71/beacon/internal/version.Commit={{.Commit}}
+      - -s -w -X github.com/tanzir71/beacon/internal/platform/version.Version={{.Version}} -X github.com/tanzir71/beacon/internal/platform/version.Commit={{.Commit}}
 
 archives:
   - id: unix

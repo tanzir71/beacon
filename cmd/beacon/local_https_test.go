@@ -19,7 +19,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/tanzir71/beacon/internal/tlsca"
+	"github.com/tanzir71/beacon/internal/platform/tlsca"
 )
 
 type localHTTPSRecordingTrustStore struct {

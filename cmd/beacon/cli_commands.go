@@ -17,11 +17,11 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"github.com/tanzir71/beacon/internal/config"
-	"github.com/tanzir71/beacon/internal/discovery"
-	"github.com/tanzir71/beacon/internal/launch"
-	"github.com/tanzir71/beacon/internal/state"
-	"github.com/tanzir71/beacon/internal/supervisor"
+	"github.com/tanzir71/beacon/internal/links/discovery"
+	"github.com/tanzir71/beacon/internal/platform/config"
+	"github.com/tanzir71/beacon/internal/platform/launch"
+	"github.com/tanzir71/beacon/internal/platform/state"
+	"github.com/tanzir71/beacon/internal/sites/supervisor"
 )
 
 const maximumCLIResponse = 4 << 20

@@ -21,15 +21,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/tanzir71/beacon/internal/config"
-	"github.com/tanzir71/beacon/internal/dashboard"
-	"github.com/tanzir71/beacon/internal/doctor"
-	"github.com/tanzir71/beacon/internal/firstrun"
-	"github.com/tanzir71/beacon/internal/router"
-	"github.com/tanzir71/beacon/internal/scanner"
-	"github.com/tanzir71/beacon/internal/state"
-	staticserver "github.com/tanzir71/beacon/internal/static"
-	"github.com/tanzir71/beacon/internal/updatecheck"
+	"github.com/tanzir71/beacon/internal/platform/config"
+	"github.com/tanzir71/beacon/internal/platform/doctor"
+	"github.com/tanzir71/beacon/internal/platform/firstrun"
+	"github.com/tanzir71/beacon/internal/platform/state"
+	"github.com/tanzir71/beacon/internal/platform/updatecheck"
+	"github.com/tanzir71/beacon/internal/sites/router"
+	"github.com/tanzir71/beacon/internal/sites/scanner"
+	staticserver "github.com/tanzir71/beacon/internal/sites/static"
+	"github.com/tanzir71/beacon/internal/ui/dashboard"
 )
 
 type lockedBuffer struct {

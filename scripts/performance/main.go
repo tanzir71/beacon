@@ -15,8 +15,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/tanzir71/beacon/internal/scanner"
-	beaconr "github.com/tanzir71/beacon/internal/server"
+	"github.com/tanzir71/beacon/internal/sites/scanner"
+	beaconr "github.com/tanzir71/beacon/internal/sites/server"
 )
 
 const fixtureApps = 200

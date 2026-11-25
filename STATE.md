@@ -1,9 +1,9 @@
 # Build State
 
 **Current milestone:** U1 - The app's own skeleton
-**Last updated:** 2026-11-24
+**Last updated:** 2026-11-25T00:08:03Z
 **Gate status:** green (local full lint/race/cross-build gate; timing risks recorded below)
-**Iterations completed:** 5
+**Iterations completed:** 6
 
 ## Milestone Progress
 
@@ -26,7 +26,7 @@
 - [ ] One configuration has sites, people, messages, network and safety sections; one state directory and HTTP port.
 - [ ] One left-rail shell: Reachable now Home with On this computer; hosting controls under Sites; no launchpad.
 - [ ] The CLI is organised by sites, people, messages, network, bundle and global commands.
-- [ ] One behavior-preserving commit moves reused code into the layout in section 7.3; gate green before and after.
+- [x] One behavior-preserving commit moves reused code into the layout in section 7.3; gate green before and after.
 - [ ] No shipped/user-visible string, generated output, environment variable or written file carries the earlier product name; history exempt.
 - [ ] `beacon.json` and legacy-only site manifests are honoured, and neither is written.
 - [ ] `TestServiceFailureIsContained` proves independent panic containment for each of the four services.
@@ -209,6 +209,29 @@
 - Full native-traced race suite exited 0 with zero `AddWith` calls for shared
   TEMP. This verifies the demonstrated watcher leak was removed, not that the
   original one-off SSE timeout's causality has been conclusively established.
+- Committed separately as `b395409`, without runtime changes or a push.
+
+### 6: Behavior-Preserving Package Relocation
+
+- Full local `make check` passed immediately before and after the move, with
+  full lint, the complete race suite, version injection, all three zero-CGO
+  targets, optional tray and the shipped-file scan unchanged.
+- Moved 27 complete package trees: hosting code to internal/sites, shared OS
+  code to internal/platform, discovery to internal/links/discovery and the
+  current dashboard/preferences to internal/ui. Package declarations and public
+  APIs are unchanged. Kept embedded assets, platform files, tests and fixtures.
+- Existing sites/app remains the hosted-site model; sites/supervisor remains
+  the hosted-child-process manager. Neither is the future app supervisor.
+- Updated only imports, linker symbols, fixture/source paths and the fuzz
+  workflow's package targets. Editing workflow source did not execute it.
+- A read-only mechanical verifier compared all 274 tracked files against HEAD
+  with exactly the declared path transformations and gofmt. It found no other
+  content changes; resources are byte-identical. This STATE entry is the sole
+  additional non-path bookkeeping change in the refactor commit.
+- The moved server race suite passed in 37.414s. No GitHub Actions, source
+  pushes, OS registration changes or dependency changes were performed.
+- The executable still has the earlier entry-point behavior until the next
+  U1 iterations; this move is not app-supervisor or unified-shell completion.
 
 ## Decisions Made This Build
 
@@ -232,7 +255,9 @@
 
 ## Next Target
 
-Commit test watcher ownership repair, then redo the behavior-preserving move.
-No further B0 features until U1 passes. Read this ledger and run `make check`
-at the start of each iteration. Run fixture suites sequentially. Do not push
-or run GitHub Actions.
+Implement the application supervisor in the now-free internal/app package:
+four independently supervised services, panic containment and backoff, then
+wire cmd/beacon through it without nesting services. Follow with unified config,
+identity first run, shell, CLI and manifest compatibility. No B0 features until
+U1 passes. Read this ledger and run `make check` at each iteration start. Run
+fixture suites sequentially. Do not push or run GitHub Actions.

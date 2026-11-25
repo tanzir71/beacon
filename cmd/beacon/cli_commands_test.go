@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/tanzir71/beacon/internal/config"
+	"github.com/tanzir71/beacon/internal/platform/config"
 )
 
 func TestUsageExposesTheHandoverCLIShape(t *testing.T) {

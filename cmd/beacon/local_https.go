@@ -14,10 +14,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/tanzir71/beacon/internal/dashboard"
-	beaconr "github.com/tanzir71/beacon/internal/server"
-	"github.com/tanzir71/beacon/internal/state"
-	"github.com/tanzir71/beacon/internal/tlsca"
+	"github.com/tanzir71/beacon/internal/platform/state"
+	"github.com/tanzir71/beacon/internal/platform/tlsca"
+	beaconr "github.com/tanzir71/beacon/internal/sites/server"
+	"github.com/tanzir71/beacon/internal/ui/dashboard"
 )
 
 type localHTTPSOptions struct {

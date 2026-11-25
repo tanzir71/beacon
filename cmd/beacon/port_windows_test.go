@@ -15,7 +15,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/tanzir71/beacon/internal/state"
+	"github.com/tanzir71/beacon/internal/platform/state"
 )
 
 func TestPortFallbackAndStatus(t *testing.T) {

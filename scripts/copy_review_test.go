@@ -18,36 +18,36 @@ func TestPrimaryCopyFollowsTheVoiceRules(t *testing.T) {
 			"Edit vhost",
 			"several hundred MB",
 		},
-		"../internal/dashboard/assets/app.js": {
+		"../internal/ui/dashboard/assets/app.js": {
 			"Optional Beacon runtime.",
 			"Not available on this platform",
 			"Click to copy connection string",
 			"HTTP ${response.status}",
 		},
-		"../internal/dashboard/assets/index.html": {
+		"../internal/ui/dashboard/assets/index.html": {
 			"certificate authority created on this computer",
 			"trust store",
 		},
-		"../internal/dashboard/dashboard.go": {
+		"../internal/ui/dashboard/dashboard.go": {
 			"app slug exactly",
 			"Tailscale Funnel is not available",
 			"Tailscale Serve is not available",
 		},
-		"../internal/discovery/funnel.go": {"app slug exactly"},
-		"../internal/firstrun/assets/example/index.html": {
+		"../internal/links/discovery/funnel.go": {"app slug exactly"},
+		"../internal/platform/firstrun/assets/example/index.html": {
 			"delete the whole folder whenever you like",
 		},
-		"../internal/php/pool.go": {"PHP runtime is not running"},
-		"../internal/runtimes/manager.go": {
+		"../internal/sites/php/pool.go": {"PHP runtime is not running"},
+		"../internal/sites/runtimes/manager.go": {
 			"FastCGI worker pool",
 			"Optional Beacon runtime.",
 		},
-		"../internal/scanner/scanner.go": {
+		"../internal/sites/scanner/scanner.go": {
 			"Apps root",
 			"URL-safe",
 			"was not mounted",
 		},
-		"../internal/doctor/doctor.go": {"✅", "⚠️", "❌"},
+		"../internal/platform/doctor/doctor.go": {"✅", "⚠️", "❌"},
 	}
 	for path, forbidden := range files {
 		content, err := os.ReadFile(path) // #nosec G304 -- paths are fixed checked-in product copy sources.
@@ -61,7 +61,7 @@ func TestPrimaryCopyFollowsTheVoiceRules(t *testing.T) {
 		}
 	}
 
-	dashboard, err := os.ReadFile("../internal/dashboard/assets/app.js") // #nosec G304 -- fixed checked-in UI source.
+	dashboard, err := os.ReadFile("../internal/ui/dashboard/assets/app.js") // #nosec G304 -- fixed checked-in UI source.
 	if err != nil {
 		t.Fatalf("read dashboard copy: %v", err)
 	}
@@ -79,7 +79,7 @@ func TestPrimaryCopyFollowsTheVoiceRules(t *testing.T) {
 			t.Errorf("ordinary dashboard warnings are not dismissible: missing %q", required)
 		}
 	}
-	dashboardHTML, err := os.ReadFile("../internal/dashboard/assets/index.html") // #nosec G304 -- fixed checked-in UI source.
+	dashboardHTML, err := os.ReadFile("../internal/ui/dashboard/assets/index.html") // #nosec G304 -- fixed checked-in UI source.
 	if err != nil {
 		t.Fatalf("read dashboard HTML copy: %v", err)
 	}

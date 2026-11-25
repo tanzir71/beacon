@@ -35,7 +35,7 @@ func TestDashboardAccessibilityRunsRenderedChecksInBothThemes(t *testing.T) {
 		}
 	}
 
-	styles, err := os.ReadFile("../internal/dashboard/assets/app.css") // #nosec G304 -- fixed checked-in stylesheet.
+	styles, err := os.ReadFile("../internal/ui/dashboard/assets/app.css") // #nosec G304 -- fixed checked-in stylesheet.
 	if err != nil {
 		t.Fatalf("read dashboard stylesheet: %v", err)
 	}
