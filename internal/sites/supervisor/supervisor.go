@@ -18,6 +18,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/tanzir71/beacon/internal/sites/app"
@@ -36,7 +37,9 @@ type Options struct {
 	PortPath      string
 	FirstPort     int
 	LastPort      int
-	OnChange      func()
+	// OnChange is a coalesced, serialized notification, not a process-control
+	// operation. It must finish and must not synchronously close this manager.
+	OnChange func()
 }
 
 // Snapshot is the observable state and bounded logs for one command app.
@@ -48,17 +51,53 @@ type Snapshot struct {
 	PrefersOwnPort bool   `json:"prefers_own_port"`
 }
 
+// Diagnostics is a nonblocking, best-effort report for a stalled command app.
+type Diagnostics struct {
+	ManagerBusy              bool
+	Found                    bool
+	App                      Snapshot
+	NotificationPending      int
+	NotificationRunning      bool
+	NotificationError        string
+	LastNotificationDuration time.Duration
+	Operation                string
+	OperationApp             string
+	OperationElapsed         time.Duration
+	OperationAttempt         int
+	OperationPort            int
+	OperationLogs            string
+}
+
+type operation struct {
+	stage   string
+	slug    string
+	started time.Time
+	attempt int
+	port    int
+	logs    *ringBuffer
+}
+
 // Manager preserves healthy command processes across scanner reconciliations.
 type Manager struct {
-	mu        sync.Mutex
-	startups  sync.WaitGroup
-	ctx       context.Context
-	cancel    context.CancelFunc
-	processes map[string]*Process
-	options   Options
-	closed    bool
-	ports     *portRegistry
-	portErr   error
+	mu                  sync.Mutex
+	startups            sync.WaitGroup
+	monitors            sync.WaitGroup
+	notifications       sync.WaitGroup
+	changes             chan struct{}
+	notificationErrors  chan error
+	closeOnce           sync.Once
+	closeErr            error
+	notifying           atomic.Bool
+	notificationNanos   atomic.Int64
+	notificationFailure atomic.Pointer[error]
+	operation           atomic.Pointer[operation]
+	ctx                 context.Context
+	cancel              context.CancelFunc
+	processes           map[string]*Process
+	options             Options
+	closed              bool
+	ports               *portRegistry
+	portErr             error
 }
 
 // NewManager creates an empty process manager.
@@ -68,7 +107,16 @@ func NewManager(options Options) *Manager {
 	}
 	ports, err := newPortRegistry(options.PortPath, options.FirstPort, options.LastPort)
 	ctx, cancel := context.WithCancel(context.Background())
-	return &Manager{ctx: ctx, cancel: cancel, processes: make(map[string]*Process), options: options, ports: ports, portErr: err}
+	manager := &Manager{
+		ctx: ctx, cancel: cancel, processes: make(map[string]*Process), options: options,
+		ports: ports, portErr: err, notificationErrors: make(chan error, 1),
+	}
+	if options.OnChange != nil {
+		manager.changes = make(chan struct{}, 1)
+		manager.notifications.Add(1)
+		go manager.runNotifications()
+	}
+	return manager
 }
 
 // SetPortRange changes the allocation range for future apps without moving
@@ -92,7 +140,7 @@ func (manager *Manager) Handler(application app.App) (http.Handler, error) {
 	key := filepath.Clean(application.Path)
 	manager.mu.Lock()
 	defer manager.mu.Unlock()
-	if manager.closed {
+	if manager.closed || manager.ctx.Err() != nil {
 		return nil, errors.New("command-app manager is closed")
 	}
 	if process, found := manager.processes[key]; found {
@@ -114,7 +162,7 @@ func (manager *Manager) HandlerAsync(application app.App) (http.Handler, error) 
 	key := filepath.Clean(application.Path)
 	manager.mu.Lock()
 	defer manager.mu.Unlock()
-	if manager.closed {
+	if manager.closed || manager.ctx.Err() != nil {
 		return nil, errors.New("command-app manager is closed")
 	}
 	if process, found := manager.processes[key]; found {
@@ -166,6 +214,9 @@ func (manager *Manager) startLocked(
 	mount *managedHandler,
 	failureTimes []time.Time,
 ) (http.Handler, error) {
+	if err := manager.ctx.Err(); err != nil {
+		return nil, err
+	}
 	key := filepath.Clean(application.Path)
 	if manager.portErr != nil {
 		return nil, manager.portErr
@@ -196,22 +247,32 @@ func (manager *Manager) startLocked(
 		process.output = logs
 		process.attempts = len(failureTimes) + attempt
 		process.failureTimes = append([]time.Time(nil), failureTimes...)
-		err = process.Start()
+		finished := manager.beginOperation(process, "start/health")
+		err = process.StartContext(manager.ctx)
+		finished()
 		if err == nil {
 			process.status = "ready"
 			process.logCloser = logs
 			handler := manager.publishLocked(key, process, mount)
-			go manager.monitor(process)
+			manager.monitors.Go(func() { manager.monitor(process) })
 			return handler, nil
 		}
 		lastError = err
+		if err := manager.ctx.Err(); err != nil {
+			return nil, errors.Join(err, logs.Close())
+		}
 		if attempt < attemptLimit {
 			delayIndex := attempt - 1
 			if delayIndex >= len(manager.options.RestartDelays) {
 				delayIndex = len(manager.options.RestartDelays) - 1
 			}
 			timer := time.NewTimer(manager.options.RestartDelays[delayIndex])
-			<-timer.C
+			select {
+			case <-manager.ctx.Done():
+				timer.Stop()
+				return nil, errors.Join(manager.ctx.Err(), logs.Close())
+			case <-timer.C:
+			}
 		}
 	}
 	crashed := newProcess(application)
@@ -259,7 +320,7 @@ func (manager *Manager) startPublished(ctx context.Context, starting *Process, l
 			}
 			manager.publishLocked(key, process, starting.mount)
 			manager.mu.Unlock()
-			go manager.monitor(process)
+			manager.monitors.Go(func() { manager.monitor(process) })
 			manager.notify()
 			return
 		}
@@ -306,9 +367,104 @@ func (manager *Manager) startPublished(ctx context.Context, starting *Process, l
 }
 
 func (manager *Manager) notify() {
-	if manager.options.OnChange != nil {
-		manager.options.OnChange()
+	if manager.changes == nil || manager.ctx.Err() != nil {
+		return
 	}
+	select {
+	case manager.changes <- struct{}{}:
+	default:
+	}
+}
+
+func (manager *Manager) runNotifications() {
+	defer manager.notifications.Done()
+	for {
+		select {
+		case <-manager.ctx.Done():
+			return
+		case <-manager.changes:
+			if manager.ctx.Err() != nil {
+				return
+			}
+			started := time.Now()
+			manager.notifying.Store(true)
+			err := callNotification(manager.options.OnChange)
+			manager.notificationNanos.Store(int64(time.Since(started)))
+			manager.notifying.Store(false)
+			if err != nil {
+				manager.notificationFailure.Store(&err)
+				select {
+				case manager.notificationErrors <- err:
+				default:
+				}
+			}
+		}
+	}
+}
+
+func callNotification(callback func()) (err error) {
+	defer func() {
+		if failure := recover(); failure != nil {
+			err = fmt.Errorf("change notification panicked: %v", failure)
+		}
+	}()
+	callback()
+	return nil
+}
+
+// NotificationErrors reports a callback failure to its service
+// owner. The channel closes only after Close has joined all notification work.
+func (manager *Manager) NotificationErrors() <-chan error {
+	return manager.notificationErrors
+}
+
+// Cancel requests shutdown without waiting for a manager lock or its workers.
+// The owner must still call Close to join work and release all resources.
+func (manager *Manager) Cancel() {
+	manager.cancel()
+}
+
+// Diagnostics avoids waiting for a manager lock held by process startup.
+func (manager *Manager) Diagnostics(slug string) Diagnostics {
+	state := Diagnostics{
+		NotificationPending: len(manager.changes), NotificationRunning: manager.notifying.Load(),
+		LastNotificationDuration: time.Duration(manager.notificationNanos.Load()),
+	}
+	if failure := manager.notificationFailure.Load(); failure != nil {
+		state.NotificationError = (*failure).Error()
+	}
+	if active := manager.operation.Load(); active != nil {
+		state.Operation = active.stage
+		state.OperationApp = active.slug
+		state.OperationElapsed = time.Since(active.started)
+		state.OperationAttempt = active.attempt
+		state.OperationPort = active.port
+		if active.logs != nil {
+			state.OperationLogs = active.logs.String()
+		}
+	}
+	if !manager.mu.TryLock() {
+		state.ManagerBusy = true
+		return state
+	}
+	defer manager.mu.Unlock()
+	for _, process := range manager.processes {
+		if process.application.Slug == slug {
+			state.App = process.Snapshot()
+			state.Found = true
+			break
+		}
+	}
+	return state
+}
+
+func (manager *Manager) beginOperation(process *Process, stage string) func() {
+	active := &operation{
+		stage: stage, slug: process.application.Slug, started: time.Now(),
+		attempt: process.attempts, port: process.port, logs: process.logs,
+	}
+	manager.operation.Store(active)
+	return func() { manager.operation.CompareAndSwap(active, nil) }
 }
 
 func (manager *Manager) startLazy(application app.App, placeholder *Process) (http.Handler, error) {
@@ -375,13 +531,20 @@ func (manager *Manager) monitor(process *Process) {
 	manager.notify()
 
 	timer := time.NewTimer(delay)
-	<-timer.C
+	defer timer.Stop()
+	select {
+	case <-manager.ctx.Done():
+		return
+	case <-timer.C:
+	}
 	manager.mu.Lock()
 	if manager.closed || manager.processes[key] != process {
 		manager.mu.Unlock()
 		return
 	}
+	finished := manager.beginOperation(process, "close exited process")
 	_ = process.Close()
+	finished()
 	delete(manager.processes, key)
 	if _, err := manager.startLocked(process.application, process.mount, failureTimes); err != nil {
 		process.status = "crashed"
@@ -507,36 +670,41 @@ func (manager *Manager) Reconcile(applications []app.App) error {
 	return errors.Join(stopErrors...)
 }
 
-// Close stops every managed command process.
+// Close stops every process and joins startup, monitor and notification work.
+// Concurrent callers all wait for the same completed shutdown.
 func (manager *Manager) Close() error {
-	manager.mu.Lock()
-	if manager.closed {
+	manager.closeOnce.Do(func() {
+		manager.cancel()
+		manager.mu.Lock()
+		manager.closed = true
 		manager.mu.Unlock()
 		manager.startups.Wait()
-		return nil
-	}
-	manager.closed = true
-	manager.cancel()
-	manager.mu.Unlock()
-	manager.startups.Wait()
 
-	manager.mu.Lock()
-	processes := make([]*Process, 0, len(manager.processes))
-	for key, process := range manager.processes {
-		processes = append(processes, process)
-		delete(manager.processes, key)
-	}
-	if manager.ports != nil {
-		manager.ports.release()
-	}
-	manager.mu.Unlock()
-	var stopErrors []error
-	for _, process := range processes {
-		if err := process.Close(); err != nil {
-			stopErrors = append(stopErrors, err)
+		manager.mu.Lock()
+		processes := make([]*Process, 0, len(manager.processes))
+		for key, process := range manager.processes {
+			processes = append(processes, process)
+			delete(manager.processes, key)
 		}
-	}
-	return errors.Join(stopErrors...)
+		if manager.ports != nil {
+			manager.ports.release()
+		}
+		manager.mu.Unlock()
+		var stopErrors []error
+		for _, process := range processes {
+			if err := process.Close(); err != nil {
+				stopErrors = append(stopErrors, err)
+			}
+		}
+		manager.monitors.Wait()
+		manager.notifications.Wait()
+		if failure := manager.notificationFailure.Load(); failure != nil {
+			stopErrors = append(stopErrors, *failure)
+		}
+		close(manager.notificationErrors)
+		manager.closeErr = errors.Join(stopErrors...)
+	})
+	return manager.closeErr
 }
 
 // Process is one healthy command app and its reverse proxy.

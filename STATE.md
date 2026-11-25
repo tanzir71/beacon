@@ -2,8 +2,8 @@
 
 **Current milestone:** U1 - The app's own skeleton
 **Last updated:** 2026-11-25
-**Gate status:** green (local full lint/race/cross-build gate; timing risks recorded below)
-**Iterations completed:** 9
+**Gate status:** green with local GOFLAGS=-p=1; default package-parallel stability remains open
+**Iterations completed:** 10
 
 ## Milestone Progress
 
@@ -35,7 +35,7 @@
 
 ## B0 Criteria
 
-- [x] `make check` exits 0 on a clean checkout.
+- [ ] Unqualified default-scheduled `make check` acceptance is stable; see BLOCKED-U1-native-package-parallel.md.
 - [ ] Beacon install/uninstall preserves an existing Dropserve installation.
 - [ ] Landing translations have identical keys; generated pages are current.
 - [ ] HTML validation, 150 KB budget, and outside-resource checks pass.
@@ -325,6 +325,58 @@
 - Shuffled race repetitions: UI/indexer 50 times (4.844s / 4.587s), plus the
   port-free boundary/preferences integration group 20 times (3.495s), all green.
 - No dependencies, GitHub Actions, pushes, trust or exposure changes.
+- Committed locally as `13d8a57`.
+
+### 10: Owned Restart Work And Native Gate Diagnostics
+
+- The proposed UI entrypoint passed its new tests first and 20 shuffled race
+  repetitions (2.817s). It is not committed or selected by cmd/beacon.
+- Its full gate passed lint but failed two timing-sensitive server cases:
+  `TestRapidChangesAreDebounced`: `burst did not settle: apps=0 rebuilds=0`
+  after 3.93s; `TestHealthyCommandIsRestartedAfterLaterExit`: never reached
+  run 2 within its existing deadline, last response the starting page (11.34s).
+- Treat this as a red gate, not a pass obtained by retry. Paused all new UI
+  entrypoint work and moved its two untracked files, byte-preserving, to
+  `C:\Users\tanzir\AppData\Local\Temp\kilo\beacon-ui-service.pending.go`
+  and `beacon-ui-service.pending_test.go`. Reverted only the pending generic
+  test-helper signature; verified git status clean at 13d8a57 before this note.
+- Read-only diagnosis ran one traced native server suite: passed 22.292s;
+  RapidChanges 2.71s and command restart 6.34s. No shared-TEMP watches among
+  288 registrations. This was non-reproduction, not accepted as a repair.
+- UI lifecycle review identified two additional proofs for eventual restoration:
+  post-Ready renderer failure must cancel/join a held request and allow restart;
+  overlapping Run must be rejected while joining. Narrow its panic comment to
+  renderer panics; ordinary request panics follow net/http per-request isolation.
+  These review items remain pending until the red gate is repaired.
+- No GitHub Actions, pushes or source-checkout changes outside Beacon.
+- A deterministic new test failed before repair: a blocked OnChange held the
+  notification caller for over five seconds. Replaced direct callbacks with one
+  owned, serialized, coalescing worker, not untracked goroutines. A blocked
+  callback now cannot stop the restart monitor reaching its replacement attempt.
+- Joined callback/startup/monitor work and made concurrent Close callers wait
+  for the same completed shutdown. Manager cancellation precedes startup locks;
+  startup/health/retry timers observe it. Server cancellation now precedes
+  activity/watcher joins. Constructor errors roll back and join acquired state.
+- Callback panics are reported on an owner-facing error stream, recorded for
+  diagnostics/Close, and do not permanently disable later notifications. The
+  future Sites Run must observe Server.ServiceErrors when wiring the app.
+- Added watcher event/debounce/active-reconcile/error evidence and nonblocking
+  command-operation/log evidence to failure reports. Kept all prior deadlines,
+  assertions and intra-package test parallelism unchanged.
+- Default full-gate attempts still failed intermittently: one showed apps=20,
+  rebuilds=1 with reconciliation active; another showed restart ManagerBusy
+  and only 8.9867ms of notification work. Root causes remain unproven.
+- Focused race proofs passed 20 shuffled repetitions after review fixes. A
+  second independent review found both shutdown/error findings resolved and
+  no concrete regression in the resulting lifetime/WaitGroup/atomic ordering.
+- The full native `make check` exited 0 with process-local GOFLAGS=-p=1:
+  full lint, all race tests (server 17.031s), injection, three zero-CGO targets,
+  tray and shipped scan. This is a local package-scheduling workaround, not
+  unqualified acceptance or proof that scheduling caused the original failures.
+- After three failing default validation iterations, recorded
+  BLOCKED-U1-native-package-parallel.md and left that acceptance criterion open.
+  Gate/CI source was not changed to serialize or skip tests. Future default
+  validation must be uncached to avoid reusing this serialized passing result.
 
 ## Decisions Made This Build
 
@@ -348,12 +400,11 @@
 
 ## Next Target
 
-Add the supervised UI entrypoint: a bounded latest-snapshot receiver whose Run
-owns SiteView creation, rendering and failure, while ServeHTTP stays a stable
-application-owned handler. Then add cancellation-safe Sites/Links entrypoints
-and wire cmd/beacon through the four-service supervisor, explicitly selecting
-external publication. Join streams/monitor work and roll back constructor
-failures before enabling retries. Links/events may be clean shells in U1, not
-fake B2 features. Follow with unified config, identity, shell, CLI and manifest
-compatibility. Run `make check` each iteration and fixture suites sequentially.
-Do not push or run GitHub Actions.
+Commit the independently verified worker hardening and diagnostics, keeping
+default native-gate stability open. Resume independent UI entrypoint work using
+the disclosed local GOFLAGS=-p=1 orchestration: restore its pending files and
+generic http.Handler helper, add its missing failure/join proofs, then verify.
+Do not mark U1/B0 complete while the native acceptance blocker remains open.
+Then add cancellation-safe Sites/Links adapters and wire cmd/beacon through the
+supervisor. Config, identity, shell, CLI and manifest work remain pending.
+No GitHub Actions or pushes; no timeout/assertion changes or unchanged retries.

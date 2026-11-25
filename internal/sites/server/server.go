@@ -89,6 +89,10 @@ func New(options scanner.Options) (*Server, error) {
 
 // NewWithOptions creates a server and atomically persists its dashboard index when requested.
 func NewWithOptions(options Options) (*Server, error) {
+	return newWithManager(options, supervisor.NewManager)
+}
+
+func newWithManager(options Options, newManager func(supervisor.Options) *supervisor.Manager) (result *Server, err error) {
 	supervisorOptions := options.Supervisor
 	if options.IndexPath != "" {
 		stateDirectory := filepath.Dir(options.IndexPath)
@@ -119,7 +123,12 @@ func NewWithOptions(options Options) (*Server, error) {
 		}
 		_ = server.reconcile()
 	}
-	server.supervisor = supervisor.NewManager(supervisorOptions)
+	server.supervisor = newManager(supervisorOptions)
+	defer func() {
+		if result == nil {
+			err = errors.Join(err, server.Close())
+		}
+	}()
 	server.liveConfig.Store(&liveServerConfig{pinToRoot: options.PinToRoot})
 	handler := http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
 		const maximumRequestBody = 64 << 20
@@ -225,6 +234,9 @@ func (server *Server) Close() error {
 	server.activityMu.Lock()
 	server.closing = true
 	server.activityMu.Unlock()
+	if server.supervisor != nil {
+		server.supervisor.Cancel()
+	}
 	server.activityWG.Wait()
 
 	var closeErrors []error
@@ -254,6 +266,31 @@ func (server *Server) recordAppUseAsync(slug string) {
 // RebuildCount returns the number of successfully published mount snapshots.
 func (server *Server) RebuildCount() uint64 {
 	return server.rebuilds.Load()
+}
+
+// WatcherDiagnostics exposes observed native work for local failure reports.
+func (server *Server) WatcherDiagnostics() watcher.Diagnostics {
+	if server.watcher == nil {
+		return watcher.Diagnostics{}
+	}
+	return server.watcher.Diagnostics()
+}
+
+// CommandDiagnostics reports restart evidence without waiting on startup locks.
+func (server *Server) CommandDiagnostics(slug string) supervisor.Diagnostics {
+	if server.supervisor == nil {
+		return supervisor.Diagnostics{}
+	}
+	return server.supervisor.Diagnostics(slug)
+}
+
+// ServiceErrors reports worker failures that the owning Sites Run must handle.
+// Close also preserves notification failures in its returned error.
+func (server *Server) ServiceErrors() <-chan error {
+	if server.supervisor == nil {
+		return nil
+	}
+	return server.supervisor.NotificationErrors()
 }
 
 func (server *Server) recordAppUse(slug string) {

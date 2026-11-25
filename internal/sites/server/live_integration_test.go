@@ -230,7 +230,7 @@ func TestRapidChangesAreDebounced(t *testing.T) {
 			lastRebuilds = rebuilds
 		}
 		if time.Now().After(deadline) {
-			t.Fatalf("burst did not settle: apps=%d rebuilds=%d", len(current.Apps), rebuilds)
+			t.Fatalf("burst did not settle: apps=%d rebuilds=%d watcher=%+v", len(current.Apps), rebuilds, server.WatcherDiagnostics())
 		}
 		time.Sleep(20 * time.Millisecond)
 	}

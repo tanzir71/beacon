@@ -629,7 +629,7 @@ if (run === 1) setTimeout(() => {
 			return
 		}
 		if time.Now().After(deadline) {
-			t.Fatalf("restarted app never returned run 2; last response = %d %q", status, body)
+			t.Fatalf("restarted app never returned run 2; last response = %d %q; command=%+v", status, body, server.CommandDiagnostics("restartable"))
 		}
 		time.Sleep(50 * time.Millisecond)
 	}

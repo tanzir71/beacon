@@ -40,15 +40,36 @@ type Options struct {
 	Reconcile         func() error
 }
 
+// Diagnostics describes observed watcher work without changing its scheduling.
+type Diagnostics struct {
+	Events                uint64
+	NativeErrors          uint64
+	DebounceResets        uint64
+	DebouncePending       bool
+	LastEvent             string
+	LastDebounceAt        time.Time
+	ReconcilesStarted     uint64
+	ReconcilesCompleted   uint64
+	ReconcileRunning      bool
+	ReconcileStartedAt    time.Time
+	LastReconcileDuration time.Duration
+	LastNativeError       string
+	LastReconcileError    string
+	LastRefreshError      string
+	Stopped               bool
+}
+
 // Watcher owns one native watcher and its reconciliation goroutine.
 type Watcher struct {
-	native  *fsnotify.Watcher
-	options Options
-	roots   []string
-	watched map[string]struct{}
-	done    chan struct{}
-	closed  chan struct{}
-	once    sync.Once
+	native        *fsnotify.Watcher
+	options       Options
+	roots         []string
+	watched       map[string]struct{}
+	done          chan struct{}
+	closed        chan struct{}
+	once          sync.Once
+	diagnosticsMu sync.Mutex
+	diagnostics   Diagnostics
 }
 
 // New starts watching all existing configured roots.
@@ -105,10 +126,38 @@ func (watcher *Watcher) Close() error {
 	return nil
 }
 
+// Diagnostics returns a consistent copy suitable for failure reports.
+func (watcher *Watcher) Diagnostics() Diagnostics {
+	watcher.diagnosticsMu.Lock()
+	defer watcher.diagnosticsMu.Unlock()
+	return watcher.diagnostics
+}
+
+func (watcher *Watcher) recordDebounce(event string, nativeError error) {
+	watcher.diagnosticsMu.Lock()
+	defer watcher.diagnosticsMu.Unlock()
+	if event != "" {
+		watcher.diagnostics.Events++
+		watcher.diagnostics.LastEvent = event
+	}
+	if nativeError != nil {
+		watcher.diagnostics.NativeErrors++
+		watcher.diagnostics.LastNativeError = nativeError.Error()
+	}
+	watcher.diagnostics.DebounceResets++
+	watcher.diagnostics.DebouncePending = true
+	watcher.diagnostics.LastDebounceAt = time.Now()
+}
+
 func (watcher *Watcher) run() {
 	defer close(watcher.closed)
 	defer func() {
 		_ = watcher.native.Close()
+	}()
+	defer func() {
+		watcher.diagnosticsMu.Lock()
+		watcher.diagnostics.Stopped = true
+		watcher.diagnosticsMu.Unlock()
 	}()
 
 	ticker := time.NewTicker(watcher.options.ReconcileInterval)
@@ -129,10 +178,11 @@ func (watcher *Watcher) run() {
 		select {
 		case <-watcher.done:
 			return
-		case _, open := <-watcher.native.Errors:
+		case err, open := <-watcher.native.Errors:
 			if !open {
 				return
 			}
+			watcher.recordDebounce("", err)
 			debounce, debounceChannel = resetTimer(debounce, watcher.options.Debounce)
 		case event, open := <-watcher.native.Events:
 			if !open {
@@ -141,9 +191,13 @@ func (watcher *Watcher) run() {
 			if event.Op&(fsnotify.Create|fsnotify.Write|fsnotify.Remove|fsnotify.Rename) == 0 {
 				continue
 			}
+			watcher.recordDebounce(event.String(), nil)
 			debounce, debounceChannel = resetTimer(debounce, watcher.options.Debounce)
 		case <-debounceChannel:
 			debounceChannel = nil
+			watcher.diagnosticsMu.Lock()
+			watcher.diagnostics.DebouncePending = false
+			watcher.diagnosticsMu.Unlock()
 			watcher.reconcile()
 		case <-ticker.C:
 			watcher.reconcile()
@@ -167,10 +221,25 @@ func resetTimer(timer *time.Timer, duration time.Duration) (*time.Timer, <-chan 
 }
 
 func (watcher *Watcher) reconcile() {
+	started := time.Now()
+	watcher.diagnosticsMu.Lock()
+	watcher.diagnostics.ReconcilesStarted++
+	watcher.diagnostics.ReconcileRunning = true
+	watcher.diagnostics.ReconcileStartedAt = started
+	watcher.diagnosticsMu.Unlock()
+	var reconcileError, refreshError string
 	if err := watcher.options.Reconcile(); err != nil {
-		return
+		reconcileError = err.Error()
+	} else if err := watcher.refreshWatches(); err != nil {
+		refreshError = err.Error()
 	}
-	_ = watcher.refreshWatches()
+	watcher.diagnosticsMu.Lock()
+	watcher.diagnostics.ReconcilesCompleted++
+	watcher.diagnostics.ReconcileRunning = false
+	watcher.diagnostics.LastReconcileDuration = time.Since(started)
+	watcher.diagnostics.LastReconcileError = reconcileError
+	watcher.diagnostics.LastRefreshError = refreshError
+	watcher.diagnosticsMu.Unlock()
 }
 
 func (watcher *Watcher) refreshWatches() error {
