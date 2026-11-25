@@ -26,6 +26,7 @@ import (
 	"github.com/tanzir71/beacon/internal/platform/config"
 	"github.com/tanzir71/beacon/internal/platform/doctor"
 	"github.com/tanzir71/beacon/internal/platform/firstrun"
+	"github.com/tanzir71/beacon/internal/platform/httptransport"
 	"github.com/tanzir71/beacon/internal/platform/launch"
 	"github.com/tanzir71/beacon/internal/platform/state"
 	"github.com/tanzir71/beacon/internal/platform/systemmemory"
@@ -666,7 +667,7 @@ func serveCommandContextWithReady(
 		}, updateTriggers, updatecheck.Check)
 	}
 
-	listenerRuntime := beaconr.NewListenerRuntime(servedHandler)
+	listenerRuntime := httptransport.NewListenerRuntime(servedHandler)
 	listenerRuntime.Start(listener)
 	if configuration.Server.HTTPSPort > 0 {
 		if httpsErr := httpsController.SetEnabled(ctx, true); httpsErr != nil {

@@ -1,4 +1,5 @@
-package server
+// Package httptransport owns application-wide HTTP and optional TLS listeners.
+package httptransport
 
 import (
 	"context"

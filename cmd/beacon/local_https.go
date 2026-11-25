@@ -14,9 +14,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/tanzir71/beacon/internal/platform/httptransport"
 	"github.com/tanzir71/beacon/internal/platform/state"
 	"github.com/tanzir71/beacon/internal/platform/tlsca"
-	beaconr "github.com/tanzir71/beacon/internal/sites/server"
 	"github.com/tanzir71/beacon/internal/ui/dashboard"
 )
 
@@ -35,7 +35,7 @@ type localHTTPSController struct {
 	mu             sync.RWMutex
 	options        localHTTPSOptions
 	authority      *tlsca.Authority
-	runtime        *beaconr.HTTPSRuntime
+	runtime        *httptransport.HTTPSRuntime
 	listener       net.Listener
 	port           int
 	trustInstalled bool
@@ -127,7 +127,7 @@ func (controller *localHTTPSController) enableLocked(ctx context.Context) error 
 			return controller.failLocked(fmt.Errorf("save HTTPS setting: %w", err))
 		}
 	}
-	runtime := beaconr.NewHTTPSRuntime(controller.options.Handler(), authority.TLSCertificate)
+	runtime := httptransport.NewHTTPSRuntime(controller.options.Handler(), authority.TLSCertificate)
 	runtime.Start(listener)
 	controller.authority = authority
 	controller.runtime = runtime

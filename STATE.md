@@ -3,7 +3,7 @@
 **Current milestone:** U1 - The app's own skeleton
 **Last updated:** 2026-11-25
 **Gate status:** green (local full lint/race/cross-build gate; timing risks recorded below)
-**Iterations completed:** 7
+**Iterations completed:** 8
 
 ## Milestone Progress
 
@@ -266,6 +266,33 @@
   without wall-clock-dependent assertions. The real timer delay remains tested.
 - Local native/Linux standalone gosec and module security checks were clean in
   the prior gate repair. No GitHub Actions or pushes were run in this iteration.
+- Committed locally as `8537f05`.
+
+### 8: Shared HTTP Transport Ownership
+
+- Startup ownership review found that shared HTTP/TLS types still lived under
+  sites/server, and the site snapshot still constructs UI. Wrapping that server
+  unchanged would not make four equal independently owned services.
+- New `TestSharedHTTPTransportIsNotOwnedBySites` failed first on the absent
+  platform package. It now enforces transport implementation outside Sites and
+  forbids dependencies from production transport code into app service packages.
+- Moved ListenerRuntime, HTTPSRuntime and their shared 256-connection limiter to
+  internal/platform/httptransport. Updated command/controller callers directly;
+  no compatibility aliases or service-specific listening ports were introduced.
+- Kept the same common access-wrapped handler for HTTP and optional HTTPS.
+  Listener acquisition/recovery, deadlines, certificate/trust semantics and
+  current handler composition are unchanged. Moved all existing TLS/recovery/
+  limiter tests with their assertions intact; kept site-log limits under Sites.
+- Focused race tests for transport and scripts exited 0. Full local `make check`
+  exited 0: full lint, race suite (sites/server 45.288s), version injection,
+  three zero-CGO targets, tray and shipped-file scan. No dependencies added.
+- This is a prerequisite boundary extraction, not completed four-service wiring.
+  UI snapshot/preferences and stream lifetimes still need separation from Sites.
+  Site constructor rollback and joining the discovery monitor are also needed
+  before repeatedly restarting those resources under the app supervisor.
+- U1 explicitly permits clean empty links/events shells; dashboard SSE is only
+  invalidation plumbing and must not be misrepresented as the messaging service.
+- No GitHub Actions, pushes, OS trust or public-exposure actions were performed.
 
 ## Decisions Made This Build
 
@@ -289,9 +316,10 @@
 
 ## Next Target
 
-Wire cmd/beacon through the new supervisor and four real service entry points,
-without nesting services. Keep the service adapters' resources and cleanup
-under their own Run contexts. Follow with unified config, identity first run,
-shell, CLI and manifest compatibility. No B0 features until U1 passes. Read this
-ledger and run `make check` at each iteration start. Run fixture suites
-sequentially. Do not push or run GitHub Actions.
+Separate UI snapshot/preferences publication from Sites so UI failure cannot
+prevent site routing, and Sites failure cannot remove the common shell/API.
+Then add cancellation-safe entrypoints and wire cmd/beacon through the supervisor
+without nested services. Links/events may be clean shells in U1, not fake B2
+features. Follow with unified config, identity first run, shell, CLI and manifest
+compatibility. Read this ledger and run `make check` at each iteration start.
+Run fixture suites sequentially. Do not push or run GitHub Actions.
