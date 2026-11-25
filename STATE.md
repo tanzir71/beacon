@@ -1,9 +1,9 @@
 # Build State
 
 **Current milestone:** U1 - The app's own skeleton
-**Last updated:** 2026-11-25T00:08:03Z
+**Last updated:** 2026-11-25
 **Gate status:** green (local full lint/race/cross-build gate; timing risks recorded below)
-**Iterations completed:** 6
+**Iterations completed:** 7
 
 ## Milestone Progress
 
@@ -232,6 +232,40 @@
   pushes, OS registration changes or dependency changes were performed.
 - The executable still has the earlier entry-point behavior until the next
   U1 iterations; this move is not app-supervisor or unified-shell completion.
+- Committed locally as `2c9fcbf`, after the separate `b395409` ownership fix.
+
+### 7: Independent Application Supervisor Core
+
+- Added failing tests in the newly free internal/app package first; compilation
+  failed on absent Service, Options and Supervisor definitions as expected.
+- Added a stdlib-only supervisor requiring exactly sites, links, events and ui.
+  Each service has its own cancellation context, panic boundary, bounded
+  exponential retry delay, status facts and independent lifecycle controls.
+- Cancellation joins all service invocations. Restart does not overlap the old
+  and replacement invocations. Normal shutdown is not counted as a failure;
+  unexpected clean exits are failures, and sibling failures never cancel peers.
+- Service entry points must honor cancellation and join their internal workers;
+  worker failures must return to the supervised entry point, not panic in an
+  unowned goroutine. Lifecycle state is explicitly not reach/readiness evidence.
+- `TestServiceFailureIsContained` injects a panic into each of four service
+  areas and verifies restart without restarting/failing the other three.
+  Other tests cover independent controls, retry timing, cancellation of a
+  one-hour backoff, invalid setup, concurrent Run rejection, early clean exits,
+  constructor/snapshot ownership, and already-canceled parent startup.
+- `go test -race -count=100 -shuffle=on ./internal/app` exited 0 (14.224s).
+  Full local `make check` exited 0 with full lint, complete race suite, injection,
+  zero-CGO targets, tray and shipped-file scanning. No dependencies were added.
+- This is the supervisor core, not command-entry-point integration: actual
+  services are not yet wired through it. The corresponding U1 integration
+  criteria deliberately remain unchecked until cmd/beacon starts all four.
+- Independent lifecycle review found no concrete defect, but identified missing
+  cleanup-joining and exponential-policy proofs. Added blocked-cleanup tests
+  proving no overlapping replacement, concurrent Stop/Start while draining,
+  and no application return before final cleanup. Extracted the pure backoff
+  policy to test growth, saturation, healthy-run reset and overflow bounds
+  without wall-clock-dependent assertions. The real timer delay remains tested.
+- Local native/Linux standalone gosec and module security checks were clean in
+  the prior gate repair. No GitHub Actions or pushes were run in this iteration.
 
 ## Decisions Made This Build
 
@@ -255,9 +289,9 @@
 
 ## Next Target
 
-Implement the application supervisor in the now-free internal/app package:
-four independently supervised services, panic containment and backoff, then
-wire cmd/beacon through it without nesting services. Follow with unified config,
-identity first run, shell, CLI and manifest compatibility. No B0 features until
-U1 passes. Read this ledger and run `make check` at each iteration start. Run
-fixture suites sequentially. Do not push or run GitHub Actions.
+Wire cmd/beacon through the new supervisor and four real service entry points,
+without nesting services. Keep the service adapters' resources and cleanup
+under their own Run contexts. Follow with unified config, identity first run,
+shell, CLI and manifest compatibility. No B0 features until U1 passes. Read this
+ledger and run `make check` at each iteration start. Run fixture suites
+sequentially. Do not push or run GitHub Actions.
